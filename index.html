@@ -6,477 +6,287 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="CBRN Ultimate">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/144/biohazard.png">
+    <meta name="apple-mobile-web-app-title" content="CBRN Pääste">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/144/radioactive.png">
     
-    <title>CBRN Eesti Pro</title>
+    <title>CBRN Ohutusjuhend</title>
     <style>
         :root {
-            --bg: #050505;
-            --card: #18181b;
-            --header: rgba(20, 20, 23, 0.95);
-            --accent: #007AFF; /* System Blue */
-            --danger: #FF3B30; /* Red */
-            --warn: #FF9500;   /* Orange */
-            --safe: #34C759;   /* Green */
-            --rad: #FFD60A;    /* Yellow */
-            --text: #F2F2F7;
-            --subtext: #8E8E93;
-            --border: #2C2C2E;
+            --bg: #000000;
+            --card: #1c1c1e;
+            --header: rgba(28, 28, 30, 0.95);
+            --accent: #0a84ff;
+            --danger: #ff453a;
+            --warn: #ff9f0a;
+            --safe: #32d74b;
+            --rad: #ffd60a;
+            --text: #ffffff;
+            --subtext: #8e8e93;
+            --border: #38383a;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0; padding: 0;
             padding-bottom: 100px;
-            -webkit-tap-highlight-color: transparent;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- HEADER --- */
+        /* HEADER */
         header {
             position: sticky; top: 0; z-index: 1000;
             background: var(--header);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            padding: 50px 20px 15px;
+            backdrop-filter: blur(20px);
+            padding: 50px 16px 15px;
             border-bottom: 1px solid var(--border);
         }
-        .app-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
-        .app-sub { font-size: 13px; color: var(--subtext); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+        .app-title { font-size: 24px; font-weight: 800; }
+        .app-sub { font-size: 12px; color: var(--subtext); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
 
-        /* --- SEARCH --- */
-        .search-wrap { margin-top: 15px; position: relative; }
-        .search-input {
-            width: 100%; background: #2C2C2E; border: none;
-            padding: 12px 40px 12px 14px; border-radius: 12px;
-            color: white; font-size: 17px; box-sizing: border-box; outline: none;
-        }
-        .search-icon { position: absolute; right: 12px; top: 12px; color: #888; }
-
-        /* --- TABS --- */
-        .view-section { display: none; padding: 20px 16px; animation: fadeUp 0.3s ease; }
+        /* TABS */
+        .view-section { display: none; padding: 16px; animation: fadeIn 0.3s ease; }
         .view-section.active { display: block; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- CHEM CARDS --- */
-        .chem-card {
-            background: var(--card); border-radius: 16px; margin-bottom: 12px;
-            padding: 16px; position: relative; overflow: hidden;
-            border-left: 4px solid var(--subtext);
-            transition: transform 0.2s;
+        /* SUB-NAV (Radiation) */
+        .sub-nav { display: flex; gap: 8px; margin-bottom: 20px; background: #2c2c2e; padding: 4px; border-radius: 10px; }
+        .sub-btn { 
+            flex: 1; padding: 8px; border-radius: 7px; 
+            text-align: center; font-size: 13px; font-weight: 600; color: #888;
         }
-        .chem-card:active { transform: scale(0.98); background: #252528; }
+        .sub-btn.active { background: #636366; color: white; }
+
+        /* CARDS */
+        .card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
         
-        /* Danger Levels Colors */
-        .lvl-tox { border-left-color: var(--danger); } /* Toxic Gas */
-        .lvl-flam { border-left-color: var(--danger); } /* Flammable */
-        .lvl-corr { border-left-color: var(--warn); }   /* Corrosive */
-
-        .head-row { display: flex; justify-content: space-between; align-items: flex-start; }
-        .chem-name { font-size: 18px; font-weight: 700; color: white; margin-bottom: 4px; }
-        .chem-tags { display: flex; gap: 6px; }
-        .tag { 
-            font-size: 11px; font-family: monospace; font-weight: 700;
-            padding: 4px 6px; border-radius: 6px; background: #333; color: #ccc;
+        /* SAFETY RULES STYLING */
+        .rule-box { 
+            border-left: 4px solid var(--subtext); 
+            padding-left: 12px; margin-bottom: 16px; 
         }
-        .tag.un { background: var(--accent); color: white; }
-        .tag.haz { border: 1px solid #555; }
-
-        /* --- FULL DETAILS MODAL (OVERLAY) --- */
-        #details-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); z-index: 2000; overflow-y: auto;
-            display: none; animation: slideIn 0.3s ease;
-        }
-        @keyframes slideIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
-        .modal-header {
-            position: sticky; top: 0; background: rgba(20,20,23,0.9);
-            backdrop-filter: blur(20px); padding: 50px 20px 15px;
-            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
-        }
-        .close-btn { 
-            background: #333; border: none; color: white; width: 32px; height: 32px; 
-            border-radius: 50%; font-weight: bold; font-size: 18px;
-        }
-
-        /* --- VISUALIZER --- */
-        .vis-container {
-            width: 100%; height: 220px; background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
-            margin: 20px 0; border-radius: 16px; position: relative;
-            display: flex; justify-content: center; align-items: center; overflow: hidden;
-            border: 1px solid #333;
-        }
-        .zone-label {
-            position: absolute; color: rgba(255,255,255,0.5); font-size: 10px; text-transform: uppercase;
-        }
-        /* Dynamic Circles */
-        .circle-hot {
-            border-radius: 50%; background: rgba(255, 59, 48, 0.3); border: 2px dashed var(--danger);
-            position: absolute; display: flex; justify-content: center; align-items: center;
-            color: var(--danger); font-weight: bold; font-size: 12px;
-            box-shadow: 0 0 30px rgba(255, 59, 48, 0.2);
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .circle-evac {
-            border-radius: 50%; background: rgba(255, 149, 0, 0.15); border: 1px solid var(--warn);
-            position: absolute; z-index: 1;
-            transition: all 0.5s ease;
-        }
-        .spill-point {
-            width: 8px; height: 8px; background: white; border-radius: 50%; position: absolute; z-index: 10;
-            box-shadow: 0 0 10px white;
-        }
-
-        /* --- DATA GRIDS --- */
-        .info-block { padding: 0 20px 30px; }
-        .sec-title { 
-            font-size: 13px; text-transform: uppercase; color: var(--subtext); 
-            margin: 25px 0 10px; font-weight: 600; letter-spacing: 1px; border-bottom: 1px solid #333; padding-bottom: 5px;
-        }
-        .desc-text { font-size: 16px; line-height: 1.5; color: #ddd; }
+        .rule-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; display: block; }
+        .rule-desc { font-size: 14px; color: #ccc; line-height: 1.4; }
         
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .stat-box { background: var(--card); padding: 12px; border-radius: 10px; }
-        .stat-lbl { font-size: 11px; color: var(--subtext); display: block; margin-bottom: 4px; }
-        .stat-val { font-size: 16px; font-weight: 700; }
-        
-        .action-box { 
-            background: rgba(52, 199, 89, 0.1); border-left: 3px solid var(--safe); 
-            padding: 15px; border-radius: 8px; margin-top: 10px; font-size: 15px; line-height: 1.4;
-        }
+        .border-red { border-left-color: var(--danger); }
+        .border-yellow { border-left-color: var(--rad); }
+        .border-green { border-left-color: var(--safe); }
 
-        /* --- RADIATION TOOLS --- */
-        .rad-panel { background: #1c1c1e; padding: 20px; border-radius: 16px; margin-bottom: 20px; }
-        .rad-display { 
-            font-family: "Menlo", monospace; font-size: 36px; color: var(--rad); 
-            text-align: center; margin: 15px 0; text-shadow: 0 0 10px rgba(255, 214, 10, 0.3);
-        }
+        /* DATA TABLE */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+        .data-table td { padding: 8px 0; border-bottom: 1px solid #333; }
+        .data-table tr:last-child td { border-bottom: none; }
+        .val { font-weight: 700; float: right; font-family: monospace; font-size: 15px; }
+
+        /* TOOLS & CALCULATORS */
         input, select {
-            width: 100%; padding: 14px; background: #2C2C2E; border: 1px solid #444;
+            width: 100%; padding: 14px; background: #2c2c2e; border: 1px solid #444;
             border-radius: 10px; color: white; font-size: 16px; margin-bottom: 10px; box-sizing: border-box;
         }
-        .btn-calc {
+        .btn-action {
             width: 100%; padding: 16px; background: var(--rad); color: black;
-            font-weight: 800; border: none; border-radius: 12px; font-size: 16px;
+            font-weight: 800; border: none; border-radius: 12px; font-size: 16px; margin-top: 10px;
         }
 
-        /* --- NAV BAR --- */
+        /* NAVIGATION BAR */
         .nav-bar {
-            position: fixed; bottom: 0; width: 100%; background: rgba(20,20,23,0.95);
+            position: fixed; bottom: 0; width: 100%; background: rgba(28,28,30,0.95);
             backdrop-filter: blur(20px); border-top: 1px solid var(--border);
-            display: flex; padding-bottom: env(safe-area-inset-bottom); padding-top: 10px;
+            display: flex; padding-bottom: env(safe-area-inset-bottom); padding-top: 8px;
         }
-        .nav-item { flex: 1; text-align: center; color: #666; font-size: 10px; }
+        .nav-item { flex: 1; text-align: center; color: #666; font-size: 10px; padding: 4px; }
         .nav-item.active { color: var(--accent); }
-        .nav-icon { font-size: 24px; margin-bottom: 4px; display: block; }
+        .nav-icon { font-size: 24px; display: block; margin-bottom: 2px; }
+
+        /* CHEM LIST STYLES */
+        .chem-item { padding: 14px; border-bottom: 1px solid #333; cursor: pointer; }
+        .chem-name { font-weight: 700; font-size: 17px; }
+        .chem-sub { font-size: 12px; color: #888; margin-top: 4px; }
+        .chem-badge { float: right; background: #333; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: var(--accent); }
 
     </style>
 </head>
 <body>
 
 <header>
-    <div class="app-title">CBRN <span style="color:var(--accent)">PRO</span></div>
-    <div class="app-sub">Eesti Pääste • HAZMAT • KIIRGUS</div>
-    
-    <div class="search-wrap" id="search-bar-container">
-        <input type="text" class="search-input" id="search" placeholder="Otsi: Nimi, UN, Ohu nr..." oninput="renderList()">
-        <span class="search-icon">🔍</span>
-    </div>
+    <div class="app-title">CBRN <span style="color:var(--accent)">ULTIMATE</span></div>
+    <div class="app-sub">Päästeameti Juhendi alusel (2023)</div>
 </header>
 
-<div id="view-chem" class="view-section active">
-    <div id="chem-list-container">
-        </div>
-</div>
-
-<div id="view-rad" class="view-section">
+<div id="view-rad" class="view-section active">
     
-    <div class="rad-panel">
-        <h3 style="color:var(--rad); margin-top:0">Ühikute Teisendaja</h3>
-        <div style="display:flex; gap:10px">
-            <input type="number" id="r-val" placeholder="0" oninput="calcRad()">
-            <select id="r-unit" onchange="calcRad()">
-                <option value="uSv">µSv/h</option>
-                <option value="mSv">mSv/h</option>
-                <option value="R">R/h (Röntgen)</option>
-                <option value="Sv">Sv/h</option>
-            </select>
-        </div>
-        <div class="rad-display" id="rad-res">0 µSv/h</div>
+    <div class="sub-nav">
+        <div class="sub-btn active" onclick="subTab('rules')">Ohutusreeglid</div>
+        <div class="sub-btn" onclick="subTab('zones')">Tsoonid & Hinnang</div>
+        <div class="sub-btn" onclick="subTab('calc')">Kalkulaator</div>
     </div>
 
-    <div class="rad-panel">
-        <h3 style="color:white; margin-top:0">Tööaeg (Stay Time)</h3>
-        <p style="color:#888; font-size:12px; margin-bottom:10px">Kui kaua tohib tsoonis viibida?</p>
+    <div id="sub-rules" class="sub-content">
         
-        <label style="font-size:12px; color:#aaa">Kiirgus tsoonis (µSv/h)</label>
-        <input type="number" id="stay-rate" placeholder="nt 500">
-        
-        <label style="font-size:12px; color:#aaa">Sinu doosi limiit (mSv)</label>
-        <input type="number" id="stay-limit" placeholder="nt 50">
-        
-        <button class="btn-calc" onclick="calcStay()">ARVUTA AEG</button>
-        <div id="stay-res" style="text-align:center; font-size:18px; font-weight:bold; margin-top:15px; color:white">--</div>
+        <div class="card">
+            <h3 style="margin-top:0; color:var(--rad)">☢️ Põhireeglid (Peatükk 6)</h3>
+            
+            <div class="rule-box border-red">
+                <span class="rule-title" style="color:var(--danger)">SISENEMISKEELD > 100 mSv/h</span>
+                <span class="rule-desc">Alasse ei tohi siseneda, v.a inimelu päästmiseks (max 30 min).</span>
+            </div>
+
+            <div class="rule-box border-yellow">
+                <span class="rule-title" style="color:var(--rad)">Kaitsevarustus (6.3)</span>
+                <span class="rule-desc">
+                    • Tüüp 5 tolmukindel ülikond<br>
+                    • Otsenäiduga dosimeeter (kohustuslik)<br>
+                    • Hingamiskaitse: P3 filter või suruõhuaparaat
+                </span>
+            </div>
+
+            <div class="rule-box border-green">
+                <span class="rule-title" style="color:var(--safe)">Saasteärastus (6.5)</span>
+                <span class="rule-desc">
+                    Mõõtepunkt turvaalalas (< 0,3 µSv/h).<br>
+                    <strong>< 1 µSv/h:</strong> Puhas (võib koju saata pesema).<br>
+                    <strong>> 1 µSv/h:</strong> Vajab kohest saasteärastust.
+                </span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0">Varustuse saastumine (6.10)</h3>
+            <table class="data-table">
+                <tr>
+                    <td>Korduvkasutatav ohualas</td>
+                    <td class="val" style="color:var(--safe)">1 - 10 µSv/h</td>
+                </tr>
+                <tr>
+                    <td>Ainult elupäästeks</td>
+                    <td class="val" style="color:var(--warn)">10 - 100 µSv/h</td>
+                </tr>
+                <tr>
+                    <td>Isoleerida / Ohtlik</td>
+                    <td class="val" style="color:var(--danger)">> 100 µSv/h</td>
+                </tr>
+            </table>
+        </div>
+
     </div>
 
-    <div class="rad-panel">
-        <h3 style="color:white; margin-top:0">Ohutu Kaugus (1/R²)</h3>
-        <input type="number" id="sq-i1" placeholder="Kiirgus punktis A">
-        <div style="display:flex; gap:10px">
-            <input type="number" id="sq-d1" placeholder="Kaugus A (m)">
-            <input type="number" id="sq-d2" placeholder="Kaugus B (m)">
+    <div id="sub-zones" class="sub-content" style="display:none">
+        
+        <div class="card">
+            <h3 style="margin-top:0">Ohuala raadiused (6.8.1)</h3>
+            <p style="font-size:12px; color:#888">Esmane hinnang enne mõõtmisi:</p>
+            
+            <table class="data-table">
+                <tr>
+                    <td>Vigastatud / Varjestamata allikas</td>
+                    <td class="val" style="color:var(--danger)">50 m</td>
+                </tr>
+                <tr>
+                    <td>Allika leke</td>
+                    <td class="val" style="color:var(--danger)">100 m</td>
+                </tr>
+                <tr>
+                    <td>Tulekahju / Plahvatus</td>
+                    <td class="val" style="color:var(--danger)">400 m</td>
+                </tr>
+            </table>
         </div>
-        <button class="btn-calc" style="background:#444; color:white" onclick="calcSq()">Prognoosi</button>
-        <div id="sq-res" style="text-align:center; margin-top:10px; color:#ccc">--</div>
+
+        <div class="card">
+            <h3 style="margin-top:0">Mõõtmised</h3>
+            <div class="rule-box border-red">
+                <span class="rule-title">Ohuala piir</span>
+                <span class="rule-desc">Määratakse doosikiirusel <strong>100 µSv/h</strong> (6.8.3).</span>
+            </div>
+            <div class="rule-box border-yellow">
+                <span class="rule-title">Lähenemine</span>
+                <span class="rule-desc">Olukorda hinnata min 30m kauguselt. Ilma mõõtjata lähenemine keelatud.</span>
+            </div>
+        </div>
     </div>
+
+    <div id="sub-calc" class="sub-content" style="display:none">
+        <div class="card">
+            <h3 style="margin-top:0; color:var(--rad)">Ühikute teisendaja</h3>
+            <div style="display:flex; gap:10px">
+                <input type="number" id="r-val" placeholder="0" oninput="calcRad()">
+                <select id="r-unit" onchange="calcRad()">
+                    <option value="uSv">µSv/h</option>
+                    <option value="mSv">mSv/h</option>
+                    <option value="R">R/h (Vana)</option>
+                </select>
+            </div>
+            <div style="text-align:center; font-family:monospace; font-size:32px; color:var(--rad); margin:15px 0" id="rad-res">
+                0 µSv/h
+            </div>
+            <p style="font-size:11px; color:#666; text-align:center">1 R ≈ 10 mSv = 10 000 µSv</p>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0">Viibimisaeg (Stay Time)</h3>
+            <label style="font-size:12px; color:#aaa">Kiirgus tsoonis (µSv/h)</label>
+            <input type="number" id="stay-rate" placeholder="nt 500000 (ehk 500 mSv)">
+            
+            <label style="font-size:12px; color:#aaa">Doosi limiit (mSv)</label>
+            <input type="number" id="stay-limit" value="100" placeholder="Elupääste: 100">
+            
+            <button class="btn-action" onclick="calcStay()">Arvuta Aeg</button>
+            <div id="stay-res" style="text-align:center; font-size:18px; font-weight:bold; margin-top:15px">--</div>
+            <p style="font-size:11px; color:#666; text-align:center; margin-top:5px">Punkt 6.6.11: Üle 100 mSv/h max 30 min (ainult elupääste).</p>
+        </div>
+    </div>
+
 </div>
 
-<div id="details-overlay">
-    <div class="modal-header">
-        <div>
-            <div class="app-sub" style="margin:0" id="det-un">UN ----</div>
-            <h1 style="margin:0; font-size:24px" id="det-name">Name</h1>
-        </div>
-        <button class="close-btn" onclick="closeDetails()">✕</button>
+<div id="view-chem" class="view-section">
+    <div class="card">
+        <input type="text" id="search" placeholder="Otsi ainet (UN, Nimi)..." oninput="filterChem()">
     </div>
-
-    <div class="info-block">
-        
-        <div class="sec-title">OHUALA VISUALISEERING</div>
-        <div class="vis-container">
-            <div class="zone-label" style="top:10px; right:10px">Tuule suund ➜</div>
-            <div class="spill-point"></div>
-            <div class="circle-evac" id="vis-evac"></div>
-            <div class="circle-hot" id="vis-hot">
-                <span id="vis-hot-text">-- m</span>
-            </div>
+    <div id="chem-list" class="card" style="padding:0">
         </div>
-        <div style="text-align:center; font-size:12px; color:#666; margin-bottom:20px">
-            *Punane: EOA (Hot Zone) • Oranž: Evakuatsiooniala (Warm/Protection)
-        </div>
-
-        <div class="sec-title">DISTANTSID (Meetrid / Kilomeetrid)</div>
-        <div class="grid-2">
-            <div class="stat-box">
-                <span class="stat-lbl">EOA (Väike leke)</span>
-                <span class="stat-val" style="color:var(--danger)" id="d-iso-s">--</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-lbl">EOA (Suur leke)</span>
-                <span class="stat-val" style="color:var(--danger)" id="d-iso-l">--</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-lbl">Evak (Päev/Suur)</span>
-                <span class="stat-val" style="color:var(--warn)" id="d-evac-d">--</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-lbl">Evak (Öö/Suur)</span>
-                <span class="stat-val" style="color:var(--warn)" id="d-evac-n">--</span>
-            </div>
-        </div>
-
-        <div class="sec-title">INFO & OHT</div>
-        <div class="desc-text">
-            <p><strong style="color:white">Kirjeldus:</strong> <span id="d-desc">--</span></p>
-            <p><strong style="color:var(--danger)">Terviseoht:</strong> <span id="d-health">--</span></p>
-        </div>
-
-        <div class="sec-title">TEGEVUS & ESMAABI</div>
-        <div class="action-box" id="d-action">--</div>
-        
-        <div style="height:50px"></div>
-    </div>
 </div>
-
 
 <div class="nav-bar">
-    <div class="nav-item active" onclick="switchView('chem', this)">
-        <span class="nav-icon">🧪</span>Keemia
-    </div>
-    <div class="nav-item" onclick="switchView('rad', this)">
+    <div class="nav-item active" onclick="switchMain('rad', this)">
         <span class="nav-icon">☢️</span>Kiirgus
+    </div>
+    <div class="nav-item" onclick="switchMain('chem', this)">
+        <span class="nav-icon">🧪</span>Keemia
     </div>
 </div>
 
 <script>
-    /* * DATA BASE (50+ Substances)
-     * un: UN Number
-     * h: Hazard No (Ohu nr / Kemler)
-     * n: Name
-     * d: Description
-     * x: Health Danger
-     * a: Action / First Aid
-     * rs/rl: Isolation Radius (Small/Large) in meters
-     * edl/enl: Evacuation (Day Large / Night Large) in km
-     * type: 'gas', 'liq', 'cwa' (for styling)
-     */
-    const db = [
-        // GASES (TOXIC)
-        {un:"1005", h:"268", n:"AMMONIAAK (Veevaba)", type:"gas", rs:30, rl:150, edl:0.8, enl:2.3, d:"Värvitu gaas, terav 'nuuskpiirituse' lõhn. Kergem kui õhk.", x:"Söövitav silmadele, nahale ja kopsudele. Hingamisraskused. Külmapõletus vedelikuna.", a:"Veeudu gaasi sidumiseks. Mitte valada vett vedelikule! Happed neutraliseerivad."},
-        {un:"1017", h:"268", n:"KLOOR", type:"gas", rs:60, rl:270, edl:1.6, enl:6.8, d:"Rohekaskollane gaas, terav ja ärritav lõhn. Raskem kui õhk (vajub alla).", x:"Tugev oksüdeerija. Põletab kopse, põhjustab turset (viivitusega).", a:"Veeudu hajutamiseks. Hapnik. Täielik hingamiskaitse (SCBA) kohustuslik."},
-        {un:"1079", h:"268", n:"VÄÄVELDIOKSIID", type:"gas", rs:30, rl:100, edl:0.8, enl:2.6, d:"Värvitu, terav 'põleva väävli' lõhn. Raskem kui õhk.", x:"Ärritab tugevalt hingamisteid. Võib põhjustada lämbumist.", a:"Veeudu. Vältida kokkupuudet."},
-        {un:"1053", h:"263", n:"VESINIKSULFIID", type:"gas", rs:30, rl:150, edl:1.2, enl:4.3, d:"Värvitu, mädamuna lõhn (suures kontsentratsioonis lõhnataju kaob!).", x:"Väga mürgine. Ründab närvisüsteemi. Surm silmapilkne suurtes doosides.", a:"Mitte kasutada vett (reageerib). Tuulutada. Hapnik."},
-        {un:"1076", h:"268", n:"FOSGEEN", type:"gas", rs:100, rl:600, edl:5.3, enl:11.0, d:"Värvitu gaas, kopitanud heina või mädanenud puuvilja lõhn.", x:"Salakaval! Kopsuturse tekib 4-24h hiljem. Lämbumine.", a:"Täielik puhkus kannatanule (isegi kui sümptomeid pole). Soojendada."},
-        {un:"1016", h:"263", n:"VINGUGAAS (CO)", type:"gas", rs:60, rl:150, edl:0.7, enl:2.2, d:"Lõhnatu, värvitu, maitsetu gaas. Põlemisjääk.", x:"Seob veres hemoglobiini. Uimasus, teadvusekadu, surm.", a:"Värske õhk. 100% Hapnik. Barokamber."},
-        {un:"1050", h:"263", n:"VESINIKKLORIID (Gaas)", type:"gas", rs:30, rl:150, edl:1.8, enl:5.6, d:"Värvitu gaas, moodustab õhus valge udu.", x:"Söövitab kõiki kudesid. Kopsuturse.", a:"Veeudu absorbeerib gaasi (tekib hape - ettevaatust!)."},
-        {un:"1040", h:"263", n:"ETÜLEENOKSIID", type:"gas", rs:30, rl:150, edl:0.6, enl:2.5, d:"Värvitu gaas, magus eetri lõhn. Tuleohtlik.", x:"Kantserogeenne. Kesknärvisüsteemi kahjustus.", a:"Suur kogus vett lahjendamiseks. Vältida sädemeid."},
-        
-        // FLAMMABLE GASES
-        {un:"1978", h:"23", n:"PROPAAN", type:"flam", rs:50, rl:100, edl:1.0, enl:1.0, d:"Lõhnatu (lisatud lõhnaaine). Raskem kui õhk - koguneb keldritesse.", x:"Lämmatav (tõrjub hapniku). Tule- ja plahvatusoht (BLEVE).", a:"Jahutada mahutit veega. Sulgeda leke kui võimalik. Mitte kustutada leeki enne sulgemist!"},
-        {un:"1011", h:"23", n:"BUTAAN", type:"flam", rs:50, rl:100, edl:1.0, enl:1.0, d:"Sarnane propaanile. Välgumihkli gaas.", x:"Plahvatusoht. Külmapõletus.", a:"Jahutada. Evakueerida ala."},
-        {un:"1001", h:"239", n:"ATSETÜLEEN", type:"flam", rs:100, rl:300, edl:1.5, enl:3.0, d:"Küüslaugu lõhnaga gaas.", x:"Väga ebastabiilne. Võib plahvatada löögist või kuumusest.", a:"Jahutada pikalt (24h+). Snaiperdamine (balloonid)."},
-        {un:"1971", h:"23", n:"MAAGAAS (CNG/LNG)", type:"flam", rs:50, rl:100, edl:1.0, enl:1.0, d:"Metaan. Kergem kui õhk.", x:"Plahvatusoht.", a:"Sulgeda kraanid. Tuulutada."},
-        {un:"1049", h:"23", n:"VESINIK", type:"flam", rs:50, rl:100, edl:1.0, enl:1.0, d:"Kergem kui õhk. Värvitu leek.", x:"Plahvatuspiirid väga laiad.", a:"Jahutada. Ettevaatust - leeki ei ole päeval näha!"},
-
-        // ACIDS & LIQUIDS
-        {un:"1789", h:"80", n:"SOOLHAPE", type:"liq", rs:30, rl:60, edl:0.2, enl:0.8, d:"Värvitu või kollakas suitsev vedelik.", x:"Tugev söövitus. Aurud söövitavad kopse.", a:"Lubivesi, sooda neutraliseerimiseks. Suur kogus vett."},
-        {un:"1830", h:"80", n:"VÄÄVELHAPE", type:"liq", rs:30, rl:30, edl:0.1, enl:0.1, d:"Õlijas, lõhnatu vedelik. Akuhape.", x:"Söestab orgaanikat. Veega kokkupuutel keeb plahvatuslikult!", a:"MITTE LISADA VETT VÄIKSELE KOGUSELE! Liiv, tuhk, sooda."},
-        {un:"2031", h:"885", n:"LÄMMASTIKHAPE (>70%)", type:"liq", rs:30, rl:60, edl:0.2, enl:0.9, d:"Suitsev punakaspruun vedelik.", x:"Tugev oksüdeerija (süütab materjale). Söövitav.", a:"Vesi suurtes kogustes. Eemaldu aurudest."},
-        {un:"1790", h:"886", n:"VESINIKFLUORIIDHAPE (HF)", type:"liq", rs:60, rl:300, edl:1.5, enl:5.8, d:"Värvitu, suitsev.", x:"ERITI OHTLIK! Imendub läbi naha ja peatab südame (seob kaltsiumi). Valu puudub alguses.", a:"Kaltsiumglükonaat geel nahale KOHESELT. Haiglaravi."},
-        
-        // FLAMMABLE LIQUIDS
-        {un:"1203", h:"33", n:"BENSIIN", type:"flam", rs:30, rl:60, edl:0.4, enl:0.6, d:"Iseloomulik lõhn. Aurud raskemad kui õhk.", x:"Narkootiline toime. Tuleoht.", a:"Vahtkustutus. Vältida kanalisatsiooni sattumist."},
-        {un:"1202", h:"30", n:"DIISLIKÜTUS", type:"flam", rs:30, rl:30, edl:0.2, enl:0.2, d:"Õlijas vedelik.", x:"Tuleoht. Libedus.", a:"Liiv, absorbent. Vaht."},
-        {un:"1170", h:"33", n:"ETANOOL", type:"flam", rs:30, rl:30, edl:0.1, enl:0.1, d:"Alkohol.", x:"Tuleoht.", a:"Lahjendada veega. Alkoholikindel vaht."},
-        
-        // CWA (WARFARE)
-        {un:"2810", h:"66", n:"SARIIN (GB)", type:"cwa", rs:60, rl:300, edl:2.1, enl:8.5, d:"Närvimürk. Vedelikuna lõhnatu, auruna puuviljane.", x:"Mioos (pupillid), krambid, ila, hingamisseiskus.", a:"Autoinjektor (Atropiin/Oksiim). Riiete eemaldamine. Pesu."},
-        {un:"2810", h:"66", n:"VX AINE", type:"cwa", rs:30, rl:60, edl:0.2, enl:0.2, d:"Õlijas vedelik. Püsib kaua maapinnal.", x:"Kontaktmürk. Väga väike doos on surmav.", a:"Kohene dekontaminatsioon (RSDL käsn). Atropiin."},
-        {un:"2810", h:"66", n:"IPRIIT (HD)", type:"cwa", rs:30, rl:100, edl:0.6, enl:2.2, d:"Sinepigaas. Lõhn: sinep, küüslauk.", x:"Villid nahal, pimedus, kopsukahjustus. Sümptomid 4-12h hiljem.", a:"Pesu. Sümptomaatiline ravi."},
-        {un:"1051", h:"663", n:"SINIHAPE (HCN)", type:"cwa", rs:30, rl:100, edl:0.5, enl:1.7, d:"Mõru mandli lõhn.", x:"Blokeerib rakuhingamise. Kiire surm.", a:"Antidoot (Amüülnitrit)."},
-
-        // OTHER TOXICS
-        {un:"2312", h:"60", n:"FENOOL (Sula)", type:"liq", rs:30, rl:60, edl:0.2, enl:0.6, d:"Magus lõhn. Valge kristalne või vedelik.", x:"Imendub läbi naha kiiresti. Neerukahjustus.", a:"PEG-300 (Polüetüleenglükool) pesuks. Vesi."},
-        {un:"1744", h:"886", n:"BROOM", type:"liq", rs:60, rl:200, edl:0.9, enl:3.4, d:"Raske punakaspruun vedelik.", x:"Söövitab. Aurud väga mürgised.", a:"Soodalahus. Tiosulfaat."},
-        {un:"2029", h:"886", n:"HÜDRASIIN", type:"liq", rs:30, rl:60, edl:0.6, enl:1.8, d:"Raketkütus. Lõhn meenutab ammoniaaki.", x:"Mürgine, söövitav, tuleohtlik.", a:"Vaht. Vesi."},
-        {un:"1092", h:"663", n:"AKROLEIIN", type:"liq", rs:60, rl:300, edl:1.5, enl:6.0, d:"Kõrbenud rasva lõhn.", x:"Äärmiselt ärritav silmadele ja kopsudele.", a:"Vesi."},
-        {un:"1614", h:"663", n:"VESINIKTSÜANIID (Stabiliseeritud)", type:"gas", rs:30, rl:100, edl:0.5, enl:1.7, d:"Vt Sinihape.", x:"Vt Sinihape.", a:"Antidoot."},
-        {un:"1230", h:"336", n:"METANOOL", type:"flam", rs:30, rl:60, edl:0.2, enl:0.3, d:"Puu-piiritus.", x:"Joomisel pimedus ja surm. Tuleb kustutada alkoholivahuga.", a:"Etanool (antidoodina mürgistusel)."},
-        {un:"1090", h:"33", n:"ATSETOON", type:"flam", rs:30, rl:30, edl:0.1, enl:0.1, d:"Küünelakieemaldaja lõhn.", x:"Ärritav, tuleohtlik.", a:"Vesi, vaht."},
-        {un:"1547", h:"60", n:"ANILIIN", type:"liq", rs:30, rl:60, edl:0.1, enl:0.3, d:"Õlijas, kalalõhn.", x:"Veremürk (tsüanoos).", a:"Pesu."},
-        {un:"1824", h:"80", n:"NAATRIUMHÜDROKSIID", type:"liq", rs:30, rl:30, edl:0.1, enl:0.1, d:"Seebikivi.", x:"Söövitab nahka libedaks (seebistab rasvu). Silmadele ohtlik.", a:"Pikk loputus veega (min 20 min)."},
-        {un:"1805", h:"80", n:"FOSFORHAPE", type:"liq", rs:30, rl:30, edl:0.1, enl:0.1, d:"Siirupjas vedelik.", x:"Söövitav.", a:"Vesi."},
-        {un:"2078", h:"60", n:"TOLUEENDIISOTSÜANAAT", type:"liq", rs:30, rl:60, edl:0.3, enl:1.1, d:"Plastitööstus.", x:"Astma, hingamisteede kahjustus.", a:"Vesi."},
-        {un:"1613", h:"66", n:"HÜDROTSÜAANHAPE", type:"gas", rs:30, rl:100, edl:0.5, enl:1.7, d:"Vesilahus.", x:"Väga mürgine.", a:"Vt Sinihape."},
-        {un:"1993", h:"33", n:"PÕLEV VEDELIK (N.O.S)", type:"flam", rs:30, rl:60, edl:0.3, enl:0.5, d:"Tundmatu.", x:"Tuli.", a:"Vaht."},
-        {un:"1760", h:"80", n:"SÖÖVITAV VEDELIK (N.O.S)", type:"liq", rs:30, rl:60, edl:0.2, enl:0.8, d:"Tundmatu hape/alus.", x:"Söövitus.", a:"Testpaber. Vesi."},
-        {un:"2811", h:"60", n:"MÜRGINE TAHKE AINE", type:"liq", rs:30, rl:60, edl:0.1, enl:0.2, d:"Pulber.", x:"Tolmu sissehingamine.", a:"Vesiudu tolmu sidumiseks."},
-        {un:"1066", h:"26", n:"LÄMMASTIK", type:"gas", rs:30, rl:100, edl:0.1, enl:0.2, d:"Inertne gaas. Vedelana krüogeenne.", x:"Lämbumine (hapnikupuudus). Külmapõletus.", a:"Ventilatsioon."},
+    // --- DATABASE (Example data - expand as needed) ---
+    const chemDB = [
+        {n: "Ammoniaak", un: "1005", k: "268", d: "Mürgine gaas"},
+        {n: "Kloor", un: "1017", k: "268", d: "Mürgine, söövitav"},
+        {n: "Bensiin", un: "1203", k: "33", d: "Tuleohtlik"},
+        {n: "Propaan", un: "1978", k: "23", d: "Plahvatusohtlik gaas"}
     ];
 
-    /* --- DOM ELEMENTS --- */
-    const chemList = document.getElementById('chem-list-container');
-    const searchInput = document.getElementById('search');
-    const overlay = document.getElementById('details-overlay');
+    // --- LOGIC ---
     
-    // Details Elements
-    const dName = document.getElementById('det-name');
-    const dUn = document.getElementById('det-un');
-    const dIsoS = document.getElementById('d-iso-s');
-    const dIsoL = document.getElementById('d-iso-l');
-    const dEvacD = document.getElementById('d-evac-d');
-    const dEvacN = document.getElementById('d-evac-n');
-    const dDesc = document.getElementById('d-desc');
-    const dHealth = document.getElementById('d-health');
-    const dAction = document.getElementById('d-action');
-    
-    // Visualizer Elements
-    const visHot = document.getElementById('vis-hot');
-    const visHotText = document.getElementById('vis-hot-text');
-    const visEvac = document.getElementById('vis-evac');
-
-    /* --- RENDER LIST --- */
-    function renderList() {
-        const query = searchInput.value.toLowerCase();
-        chemList.innerHTML = '';
+    // Sub-tab switching
+    function subTab(id) {
+        document.querySelectorAll('.sub-content').forEach(el => el.style.display = 'none');
+        document.getElementById('sub-' + id).style.display = 'block';
         
-        const filtered = db.filter(item => 
-            item.n.toLowerCase().includes(query) || 
-            item.un.includes(query) || 
-            item.h.includes(query)
-        );
-
-        filtered.forEach(item => {
-            // Style based on type
-            let lvl = "";
-            if(item.type === 'gas' || item.type === 'cwa') lvl = "lvl-tox";
-            else if(item.type === 'flam') lvl = "lvl-flam";
-            else lvl = "lvl-corr";
-
-            const card = document.createElement('div');
-            card.className = `chem-card ${lvl}`;
-            card.onclick = () => openDetails(item);
-            
-            card.innerHTML = `
-                <div class="head-row">
-                    <div>
-                        <div class="chem-name">${item.n}</div>
-                        <div style="font-size:12px; color:#888">${item.d.substring(0,40)}...</div>
-                    </div>
-                    <div class="chem-tags">
-                        <span class="tag haz">Ohu nr: ${item.h}</span>
-                        <span class="tag un">UN ${item.un}</span>
-                    </div>
-                </div>
-            `;
-            chemList.appendChild(card);
-        });
+        document.querySelectorAll('.sub-btn').forEach(el => el.classList.remove('active'));
+        event.target.classList.add('active');
     }
 
-    /* --- DETAILS & VISUALIZER LOGIC --- */
-    function openDetails(item) {
-        dName.innerText = item.n;
-        dUn.innerText = `UN ${item.un} • Ohu nr ${item.h}`;
+    // Main View switching
+    function switchMain(id, el) {
+        document.querySelectorAll('.view-section').forEach(d => d.classList.remove('active'));
+        document.getElementById('view-' + id).classList.add('active');
         
-        // Data
-        dIsoS.innerText = item.rs + " m";
-        dIsoL.innerText = item.rl + " m";
-        dEvacD.innerText = item.edl + " km";
-        dEvacN.innerText = item.enl + " km";
-        
-        dDesc.innerText = item.d;
-        dHealth.innerText = item.x;
-        dAction.innerText = item.a;
-
-        // Visualizer Animation
-        // Reset styles
-        visHot.style.width = '0px'; visHot.style.height = '0px';
-        visEvac.style.width = '0px'; visEvac.style.height = '0px';
-        visHotText.style.opacity = '0';
-        
-        overlay.style.display = 'block';
-
-        // Animate
-        setTimeout(() => {
-            // Logic: Hot zone represents the core. Evac zone represents the large circle.
-            // We scale visually for UI, not perfectly 1:1 map scale (as km vs m is too big diff)
-            // Hot zone is always fixed relative size for visibility, Evac scales
-            
-            visHot.style.width = '80px'; 
-            visHot.style.height = '80px';
-            visHotText.innerHTML = `${item.rl} m`;
-            visHotText.style.opacity = '1';
-
-            // Scale evac circle based on Night Large distance (worst case)
-            // Cap it so it doesn't explode the screen
-            let size = Math.min(item.enl * 40 + 100, 300); // Abstract scaling
-            visEvac.style.width = size + 'px';
-            visEvac.style.height = size + 'px';
-            
-            // Offset Evac circle to show "Downwind" effect (shift right)
-            visEvac.style.transform = `translateX(${size/4}px)`;
-            
-        }, 100);
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
     }
 
-    function closeDetails() {
-        overlay.style.display = 'none';
-    }
-
-    /* --- RADIATION CALCULATOR --- */
+    // Radiation Converter
     function calcRad() {
         const val = parseFloat(document.getElementById('r-val').value);
         const unit = document.getElementById('r-unit').value;
@@ -487,63 +297,61 @@
         let uSv = 0;
         if(unit === 'uSv') uSv = val;
         if(unit === 'mSv') uSv = val * 1000;
-        if(unit === 'R') uSv = val * 10000; // Approx
-        if(unit === 'Sv') uSv = val * 1000000;
+        if(unit === 'R') uSv = val * 10000; 
 
-        let txt = "";
-        if(uSv < 1000) txt = uSv.toFixed(1) + " µSv/h";
-        else if(uSv < 1000000) txt = (uSv/1000).toFixed(2) + " mSv/h";
-        else txt = (uSv/1000000).toFixed(3) + " Sv/h";
-        
-        res.innerText = txt;
+        // Auto format
+        let text = "";
+        if(uSv < 1000) text = uSv.toFixed(1) + " µSv/h";
+        else if(uSv < 1000000) text = (uSv/1000).toFixed(2) + " mSv/h";
+        else text = (uSv/1000000).toFixed(3) + " Sv/h";
+
+        res.innerText = text;
     }
 
+    // Stay Time Calc
     function calcStay() {
-        const rate = parseFloat(document.getElementById('stay-rate').value); // uSv
-        const limit = parseFloat(document.getElementById('stay-limit').value); // mSv
-        const out = document.getElementById('stay-res');
-        
-        if(!rate || !limit) return;
-        
-        // Convert rate to mSv/h
-        const rate_mSv = rate / 1000;
-        const hours = limit / rate_mSv;
+        const rate_uSv = parseFloat(document.getElementById('stay-rate').value);
+        const limit_mSv = parseFloat(document.getElementById('stay-limit').value);
+        const res = document.getElementById('stay-res');
+
+        if(!rate_uSv || !limit_mSv) { res.innerText = "--"; return; }
+
+        const rate_mSv = rate_uSv / 1000;
+        const hours = limit_mSv / rate_mSv;
         const mins = Math.floor(hours * 60);
-        
-        if(mins < 60) out.innerText = mins + " minutit";
+
+        if(mins < 60) res.innerText = mins + " minutit";
         else {
             const h = Math.floor(mins/60);
-            const m = mins%60;
-            out.innerText = `${h}h ${m}min`;
+            const m = mins % 60;
+            res.innerText = `${h}h ${m}min`;
+        }
+        
+        if (mins > 30 && rate_uSv >= 100000) {
+            res.innerHTML += "<br><span style='color:red; font-size:12px'>(NB! Üle 100 mSv/h on lubatud max 30 min!)</span>";
         }
     }
 
-    function calcSq() {
-        const i1 = parseFloat(document.getElementById('sq-i1').value);
-        const d1 = parseFloat(document.getElementById('sq-d1').value);
-        const d2 = parseFloat(document.getElementById('sq-d2').value);
-        const res = document.getElementById('sq-res');
-        
-        if(!i1 || !d1 || !d2) return;
-        const i2 = i1 * (d1*d1) / (d2*d2);
-        res.innerText = `Tulemus: ${i2.toFixed(2)}`;
+    // Chem Search
+    const listEl = document.getElementById('chem-list');
+    function renderChem(data) {
+        listEl.innerHTML = "";
+        data.forEach(i => {
+            const div = document.createElement('div');
+            div.className = 'chem-item';
+            div.innerHTML = `<div class="chem-name">${i.n} <span class="chem-badge">UN ${i.un}</span></div><div class="chem-sub">${i.d} (Oht: ${i.k})</div>`;
+            listEl.appendChild(div);
+        });
     }
-
-    /* --- VIEW SWITCHER --- */
-    window.switchView = function(view, el) {
-        document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-        document.getElementById('view-' + view).classList.add('active');
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        el.classList.add('active');
-        
-        // Header title change
-        const t = document.querySelector('.app-title');
-        if(view === 'chem') t.innerHTML = 'CBRN <span style="color:var(--accent)">PRO</span>';
-        if(view === 'rad') t.innerHTML = 'KIIRGUS <span style="color:var(--rad)">ARVUTI</span>';
+    
+    function filterChem() {
+        const q = document.getElementById('search').value.toLowerCase();
+        const f = chemDB.filter(i => i.n.toLowerCase().includes(q) || i.un.includes(q));
+        renderChem(f);
     }
-
+    
     // Init
-    renderList();
+    renderChem(chemDB);
 
 </script>
 </body>
