@@ -3,855 +3,369 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>CBRN Keemiaarvuti</title>
+    <title>CBRN Keemiaarvuti: ERG 2024</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <style>
         :root {
             --bg: #121212;
-            --card: #1c1c1e;
-            --text: #ffffff;
-            --muted: #8e8e93;
+            --panel: #1e1e1e;
+            --text: #e0e0e0;
             --accent: #0a84ff;
-            --tox: #bf5af2;
-            --flam: #ff3b30;
-            --corr: #ff9f0a;
-            --border: #2c2c2e;
+            --danger: #ff453a; /* Hot Zone Red */
+            --warn: #ff9f0a;   /* PAZ Orange */
+            --border: #333;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 0;
-            padding-bottom: 90px;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
+        body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
 
-        /* HEADER */
-        header {
-            background: rgba(28,28,30,0.95);
-            padding: 50px 20px 15px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            border-bottom: 1px solid var(--border);
+        /* LAYOUT */
+        #app-container { display: flex; flex-direction: column; height: 100vh; }
+        
+        /* MAP LAYER */
+        #map { flex-grow: 1; z-index: 1; background: #222; }
+
+        /* UI OVERLAY (Tactical Interface) */
+        #ui-layer {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: rgba(30, 30, 30, 0.95);
             backdrop-filter: blur(10px);
-        }
-        h1 { margin: 0; font-size: 26px; font-weight: 800; }
-        .subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 500; }
-
-        /* SEARCH */
-        .search-box {
-            width: 100%;
-            background: #000;
-            border: 1px solid #444;
-            padding: 14px 40px 14px 14px;
-            border-radius: 12px;
-            color: white;
-            font-size: 18px;
-            box-sizing: border-box;
-            margin-top: 15px;
-            outline: none;
-        }
-        .search-wrap { position: relative; }
-        .search-icon { position: absolute; right: 14px; top: 28px; color: #666; font-size: 18px; }
-
-        /* CONTAINERS */
-        .screen {
-            display: none;
-        }
-        .screen.active {
-            display: block;
-        }
-
-        /* CARDS */
-        .container { padding: 16px; }
-        .card {
-            background: var(--card);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
-            border: 1px solid var(--border);
-            transition: transform 0.2s;
-        }
-        .card:active {
-            transform: scale(0.98);
-            background: #252525;
-        }
-
-        /* LIST ITEM STYLES */
-        .chem-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-        .chem-name { font-size: 18px; font-weight: 700; color: white; }
-        .chem-meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
-        .chem-badges { display: flex; gap: 6px; flex-shrink: 0; }
-        .badge {
-            font-size: 12px;
-            font-family: monospace;
-            font-weight: 700;
-            padding: 4px 8px;
-            border-radius: 6px;
-            background: #333;
-            color: #ddd;
-        }
-        .badge.un { background: var(--accent); color: white; }
-        .badge.haz { border: 1px solid #555; }
-
-        /* MODAL / DETAILS VIEW */
-        #details-view {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: var(--bg);
-            z-index: 200;
-            overflow-y: auto;
-            display: none;
-            padding-bottom: 70px;
-        }
-        .modal-header {
-            padding: 50px 20px 20px;
-            background: rgba(28,28,30,0.95);
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-        }
-        .close-btn {
-            background: #333;
-            color: white;
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            font-weight: bold;
-            font-size: 18px;
-        }
-        .fav-btn { /* NEW */
-            background: transparent;
-            border: none;
-            font-size: 22px;
-            margin-left: 8px;
-            cursor: pointer;
-        }
-        .fav-btn.active { color: #ffd60a; }
-
-        .modal-title-row { display: flex; align-items: center; gap: 4px; }
-
-        /* CALCULATOR GRID */
-        .calc-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .calc-btn {
-            background: #2c2c2e;
-            color: #888;
-            border: 1px solid #333;
-            padding: 12px;
-            border-radius: 10px;
-            font-weight: 600;
-            text-align: center;
-            font-size: 13px;
-        }
-        .calc-btn.active {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-
-        .result-zone {
-            background: #111;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            border: 1px solid #333;
-            margin-top: 10px;
-        }
-        .res-val { font-size: 32px; font-weight: 800; display: block; margin: 5px 0; }
-        .res-lbl { font-size: 12px; color: #888; text-transform: uppercase; }
-        .res-color-red { color: var(--flam); }
-        .res-color-orange { color: var(--corr); }
-
-        /* HAZARD BAR (визуальные зоны) — NEW */
-        .hazard-bar {
-            display: flex;
-            width: 100%;
-            height: 20px;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 10px;
-            border: 1px solid #333;
-        }
-        .hazard-hot {
-            background: var(--flam);
-            flex: 1;
-        }
-        .hazard-evac {
-            background: var(--corr);
-            flex: 3;
-        }
-        .hazard-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            color: #aaa;
-            margin-top: 4px;
-        }
-
-        /* WIND SLIDER — NEW */
-        .slider-row {
-            margin-top: 10px;
-            font-size: 13px;
-            color: var(--muted);
-        }
-        .slider-row input[type=range] {
-            width: 100%;
-        }
-        .slider-value {
-            font-weight: 600;
-            color: #fff;
-        }
-
-        /* KEMLER DECODER */
-        .kemler-row { display: flex; gap: 10px; margin-bottom: 5px; }
-        .kemler-char {
-            width: 30px; height: 30px;
-            background: var(--corr);
-            color: black;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-        }
-
-        /* NAV */
-        .nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: rgba(28,28,30,0.95);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border);
-            display: flex;
+            border-top: 1px solid var(--accent);
+            z-index: 1000;
             padding-bottom: env(safe-area-inset-bottom);
-            z-index: 150;
-        }
-        .nav-item {
-            flex: 1;
-            text-align: center;
-            padding: 8px 4px 10px;
-            color: var(--muted);
-            font-size: 10px;
-            font-weight: 600;
-        }
-        .nav-item.active { color: var(--accent); }
-        .icon { font-size: 20px; display: block; margin-bottom: 2px; }
-
-        /* TABLES (для сравнения) — NEW */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        th, td {
-            padding: 6px 4px;
-            border-bottom: 1px solid #333;
-            text-align: left;
-        }
-        th {
-            color: var(--muted);
-            font-weight: 600;
+            transition: transform 0.3s ease;
+            max-height: 60vh;
+            overflow-y: auto;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
         }
 
-        .btn-secondary { /* NEW */
-            background: #2c2c2e;
-            border-radius: 10px;
-            padding: 10px 14px;
-            border: 1px solid #333;
-            color: #fff;
-            font-size: 13px;
-            font-weight: 500;
+        /* HEADER & SEARCH */
+        .top-bar {
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: 10px; box-sizing: border-box;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            z-index: 1001; pointer-events: none;
         }
-        .btn-primary { /* NEW */
-            background: var(--accent);
-            border-radius: 10px;
-            padding: 10px 14px;
-            border: none;
-            color: #fff;
-            font-size: 13px;
-            font-weight: 600;
+        .search-container { pointer-events: auto; display: flex; gap: 10px; }
+        input#search {
+            flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #444;
+            background: rgba(0,0,0,0.8); color: white; font-size: 16px;
+        }
+        button#btn-li-ion {
+            background: #ff3b30; color: white; border: none; border-radius: 8px;
+            font-weight: bold; padding: 0 15px; font-size: 14px;
         }
 
-        /* TOOLS INPUTS — NEW */
-        .input-row {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
+        /* CONTROLS */
+        .controls { padding: 15px; }
+        .row { display: flex; gap: 10px; margin-bottom: 12px; }
+        .col { flex: 1; }
+
+        label { font-size: 11px; text-transform: uppercase; color: #888; display: block; margin-bottom: 5px; }
+        
+        /* SEGMENTED CONTROLS */
+        .seg-control { display: flex; background: #333; border-radius: 8px; padding: 2px; }
+        .seg-btn {
+            flex: 1; padding: 10px; text-align: center; font-size: 13px; font-weight: 600;
+            color: #888; border-radius: 6px; cursor: pointer; transition: 0.2s;
         }
-        .input-row input {
-            flex: 1;
-            padding: 8px 10px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            background: #000;
-            color: #fff;
-            font-size: 13px;
+        .seg-btn.active { background: #555; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .seg-btn.active.danger { background: var(--danger); }
+
+        /* WIND SLIDER */
+        input[type=range] { width: 100%; accent-color: var(--accent); }
+        .wind-val { float: right; color: var(--accent); font-weight: bold; }
+
+        /* INFO PANEL */
+        .info-panel {
+            background: #252525; padding: 15px; border-radius: 8px; margin-top: 10px;
+            border-left: 4px solid var(--accent);
         }
-        .hint {
-            font-size: 11px;
-            color: var(--muted);
-            margin-top: 4px;
+        .chem-title { font-size: 18px; font-weight: 800; margin: 0; }
+        .chem-un { font-family: monospace; color: var(--accent); font-size: 14px; }
+        .zone-data { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; }
+        .val-hot { color: var(--danger); font-weight: bold; }
+        .val-warm { color: var(--warn); font-weight: bold; }
+
+        /* CWA WARNING */
+        .cwa-alert {
+            background: #2e003e; border: 1px solid #d500f9; color: #fff;
+            padding: 10px; margin-bottom: 10px; border-radius: 6px;
+            font-weight: bold; text-align: center; display: none;
         }
 
-        /* PRINT — NEW: печать только деталей */
-        @media print {
-            body { background: #fff; color: #000; }
-            #main-screen, #compare-screen, #tools-screen, .nav { display: none !important; }
-            #details-view {
-                position: static;
-                display: block !important;
-                background: #fff;
-            }
-            .modal-header { position: static; background: #fff; border-bottom: 1px solid #ccc; }
-            .close-btn, .fav-btn { display: none; }
-            .card { border-color: #ccc; }
-        }
     </style>
 </head>
 <body>
 
-<!-- MAIN LIST SCREEN -->
-<div id="main-screen" class="screen active">
-    <header>
-        <h1>Keemiaarvuti</h1>
-        <div class="subtitle">Ohtlike ainete andmebaas</div>
-        <div class="search-wrap">
-            <input type="text" id="search" class="search-box" placeholder="UN, Nimi (nt 1203, Kloor)..." oninput="renderList()">
-            <span class="search-icon">🔍</span>
-        </div>
-    </header>
-
-    <div id="list-container" class="container"></div>
-</div>
-
-<!-- COMPARE SCREEN — NEW -->
-<div id="compare-screen" class="screen">
-    <header>
-        <h1>Võrdlus</h1>
-        <div class="subtitle">Valitud ainete põhiparameetrid</div>
-    </header>
-    <div class="container">
-        <div id="compare-empty" class="card" style="text-align:center; font-size:14px; color:var(--muted);">
-            Lisa aineid võrdluseks detailvaates nupuga „Lisa võrdlusesse”.
-        </div>
-        <div id="compare-table-wrap" style="display:none;">
-            <div class="card">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Aine</th>
-                            <th>UN</th>
-                            <th>Kemler</th>
-                            <th>Klass</th>
-                            <th>Iso (väike)</th>
-                            <th>Evac päev (suur)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="compare-table-body"></tbody>
-                </table>
-            </div>
-            <button class="btn-secondary" onclick="clearCompare()">Tühjenda võrdlus</button>
-        </div>
-    </div>
-</div>
-
-<!-- TOOLS SCREEN — NEW -->
-<div id="tools-screen" class="screen">
-    <header>
-        <h1>Tööriistad</h1>
-        <div class="subtitle">Kiired abiarvutused</div>
-    </header>
-    <div class="container">
-
-        <div class="card">
-            <div class="subtitle">Ühikute teisendamine</div>
-            <div style="margin-top:8px; font-size:13px;">Liitrid → m³</div>
-            <div class="input-row">
-                <input type="number" id="l-input" placeholder="Liitrid" oninput="convertLiters()">
-            </div>
-            <div class="hint">1 m³ = 1000 L</div>
-            <div style="margin-top:6px; font-size:14px;">
-                Tulemus: <span id="l-result">-</span> m³
-            </div>
-
-            <hr style="border:none; border-top:1px solid #333; margin:16px 0;">
-
-            <div style="margin-top:4px; font-size:13px;">Liitrid → USA gallonid (ligikaudne)</div>
-            <div class="input-row">
-                <input type="number" id="gal-input" placeholder="Liitrid" oninput="convertGallons()">
-            </div>
-            <div class="hint">1 gal ≈ 3.785 L</div>
-            <div style="margin-top:6px; font-size:14px;">
-                Tulemus: <span id="gal-result">-</span> gal
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="subtitle">Mahutavuse kalkulaator</div>
-            <div class="hint">Ligikaudne risttahuka (paagi) maht. Mõõdud meetrites.</div>
-            <div class="input-row">
-                <input type="number" id="len-input" placeholder="Pikkus (m)" step="0.1">
-                <input type="number" id="wid-input" placeholder="Laius (m)" step="0.1">
-            </div>
-            <div class="input-row">
-                <input type="number" id="hei-input" placeholder="Kõrgus (m)" step="0.1">
-            </div>
-            <button class="btn-primary" style="margin-top:10px;" onclick="calcVolume()">Arvuta maht</button>
-            <div style="margin-top:8px; font-size:14px;">
-                Maht: <span id="vol-result">-</span>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-<!-- DETAILS VIEW (MODAL) -->
-<div id="details-view">
-    <div class="modal-header">
-        <div>
-            <div class="subtitle" id="d-un">UN ----</div>
-            <div class="modal-title-row">
-                <h1 id="d-name" style="font-size: 22px; margin:0;">Aine Nimi</h1>
-                <button class="fav-btn" id="fav-btn" onclick="toggleFavorite(event)">☆</button>
-            </div>
-        </div>
-        <div style="display:flex; gap:6px; align-items:center;">
-            <button class="btn-secondary" onclick="window.print()">PDF / Print</button>
-            <button class="close-btn" onclick="closeDetails()">✕</button>
+<div id="app-container">
+    
+    <div class="top-bar">
+        <div class="search-container">
+            <input type="text" id="search" placeholder="UN kood või Nimi (nt 1017, Kloor)..." onchange="findChem()">
+            <button id="btn-li-ion" onclick="activateLithiumMode()">🔋 Li-Ion</button>
         </div>
     </div>
 
-    <div class="container">
-        <div class="card" style="border-left: 4px solid var(--accent)">
-            <div style="display:flex; justify-content:space-between; gap:12px;">
-                <div>
-                    <div class="subtitle">OHU NUMBER (KEMLER)</div>
-                    <h2 id="d-kemler" style="margin:5px 0">--</h2>
-                </div>
-                <div>
-                    <div class="subtitle">OHUKLASS</div>
-                    <h2 id="d-class" style="margin:5px 0">--</h2>
+    <div id="map"></div>
+
+    <div id="ui-layer">
+        <div class="controls">
+            
+            <div id="cwa-banner" class="cwa-alert">⚠️ RÜNDEMÜRK (CWA) - TERRORIOHT</div>
+
+            <div class="info-panel" id="info-box" style="display:none">
+                <div class="chem-un" id="disp-un">UN ----</div>
+                <h2 class="chem-title" id="disp-name">Vali aine</h2>
+                <div class="zone-data">
+                    <span>Eralda (Hot): <span id="val-iso" class="val-hot">-- m</span></span>
+                    <span>Kaitse (PAZ): <span id="val-paz" class="val-warm">-- km</span></span>
                 </div>
             </div>
-            <div id="kemler-desc" style="margin-top:10px; font-size:14px; line-height:1.4; color:#ccc;"></div>
-        </div>
 
-        <div class="subtitle" style="margin-bottom:10px; margin-left:5px">OHUALA ARVUTAMINE</div>
+            <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
 
-        <div class="card">
-            <div class="calc-grid">
-                <div class="calc-btn active" id="btn-small" onclick="setParams('small')">VÄIKE LEKE<br><span style="font-size:10px; font-weight:400">(&lt; 200 L)</span></div>
-                <div class="calc-btn" id="btn-large" onclick="setParams('large')">SUUR LEKE<br><span style="font-size:10px; font-weight:400">(&gt; 200 L)</span></div>
-            </div>
-
-            <div class="calc-grid">
-                <div class="calc-btn active" id="btn-day" onclick="setParams('day')">PÄEV<br><span style="font-size:10px; font-weight:400">(Ebastabiilne)</span></div>
-                <div class="calc-btn" id="btn-night" onclick="setParams('night')">ÖÖ<br><span style="font-size:10px; font-weight:400">(Inversioon)</span></div>
-            </div>
-
-            <!-- NEW: ветровые условия -->
-            <div class="slider-row">
-                Tuule kiirus: <span class="slider-value" id="wind-val">0</span> km/h
-                <input type="range" id="wind" min="0" max="20" step="1" value="0" oninput="updateWind()">
-                <div class="hint">Lihtsustatud korrigeerimine: mida suurem tuul, seda pikem allatuule tsoon.</div>
-            </div>
-
-            <div class="result-zone" style="border-color: var(--flam)">
-                <span class="res-lbl">ISOLATSIOONIALA (KÕIK SUUNAD)</span>
-                <span class="res-val res-color-red" id="res-iso">-- m</span>
-                <span style="font-size:12px; color:#666">Kuum tsoon (Hot Zone)</span>
-            </div>
-
-            <div class="result-zone" style="border-color: var(--corr); margin-top:15px">
-                <span class="res-lbl">EVAKUATSIOON (ALLATUULT)</span>
-                <span class="res-val res-color-orange" id="res-evac">-- km</span>
-                <span style="font-size:12px; color:#666">Kaitsetegevuse ulatus</span>
-
-                <!-- NEW: визуальный бар -->
-                <div class="hazard-bar">
-                    <div class="hazard-hot" id="hazard-hot"></div>
-                    <div class="hazard-evac" id="hazard-evac"></div>
+            <div class="row">
+                <div class="col">
+                    <label>Lekke suurus</label>
+                    <div class="seg-control">
+                        <div class="seg-btn active" id="btn-small" onclick="setSpill('small')">VÄIKE<br><span style="font-size:9px">< 208L</span></div>
+                        <div class="seg-btn" id="btn-large" onclick="setSpill('large')">SUUR<br><span style="font-size:9px">> 208L</span></div>
+                    </div>
                 </div>
-                <div class="hazard-labels">
-                    <span>Kuum tsoon</span>
-                    <span>Evakua tsoon</span>
+                <div class="col">
+                    <label>Aeg / Ilm</label>
+                    <div class="seg-control">
+                        <div class="seg-btn active" id="btn-day" onclick="setTime('day')">PÄEV</div>
+                        <div class="seg-btn" id="btn-night" onclick="setTime('night')">ÖÖ</div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="card">
-            <div class="subtitle">OHTLIKKUS</div>
-            <p id="d-desc" style="line-height:1.5; font-size:15px; color:#ddd">--</p>
-        </div>
+            <div class="row">
+                <div class="col">
+                    <label>Tuule suund (Kuhu puhub): <span id="wind-disp" class="wind-val">0° (N)</span></label>
+                    <input type="range" id="wind-slider" min="0" max="360" value="0" oninput="updateWind(this.value)">
+                    <div style="font-size:10px; color:#666; text-align:center; margin-top:5px">Pööra liugurit vastavalt tuulele</div>
+                </div>
+            </div>
 
-        <div class="card" style="background:rgba(50,215,75,0.1); border-color:#32d74b">
-            <div class="subtitle" style="color:#32d74b">TEGEVUSJUHIS (T-Juhis)</div>
-            <p id="d-act" style="line-height:1.5; font-size:15px;">--</p>
-        </div>
-
-        <div class="card" style="display:flex; gap:8px; justify-content:space-between; align-items:center;">
-            <button class="btn-secondary" onclick="addToCompare()">Lisa võrdlusesse</button>
-            <span style="font-size:12px; color:var(--muted);">Võrdle mitut ainet eraldi vaates.</span>
         </div>
     </div>
 </div>
 
-<!-- NAVIGATION -->
-<div class="nav">
-    <div class="nav-item active" id="nav-main" onclick="showScreen('main')">
-        <span class="icon">📚</span>
-        ANDMEBAAS
-    </div>
-    <div class="nav-item" id="nav-compare" onclick="showScreen('compare')">
-        <span class="icon">⚖️</span>
-        VÕRDLUS
-    </div>
-    <div class="nav-item" id="nav-tools" onclick="showScreen('tools')">
-        <span class="icon">🧮</span>
-        TÖÖRIISTAD
-    </div>
-</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
 <script>
-    // --- DATABASE ---
+    // --- 1. DATA SOVEREIGNTY (JSON DATABASE) ---
+    // Expanded structure to support ERG 2024 logic
     const db = [
         {
-            n: "AMMONIAAK (Veevaba)", un: "1005", k: "268", c: "2.3",
-            rs: 30, rl: 150, eds: 0.1, ens: 0.2, edl: 0.8, enl: 2.3,
-            desc: "Mürgine gaas. Söövitav. Reageerib veega (kuumeneb).",
-            act: "Veeudu gaasi sidumiseks. Happed neutraliseerivad."
+            un: "1005", name: "AMMONIAAK (Veevaba)", type: "tic",
+            iso_s: 30, paz_s_d: 0.1, paz_s_n: 0.2,
+            iso_l: 150, paz_l_d: 0.8, paz_l_n: 2.3
         },
         {
-            n: "KLOOR", un: "1017", k: "268", c: "2.3",
-            rs: 60, rl: 270, eds: 0.2, ens: 0.8, edl: 1.6, enl: 6.8,
-            desc: "Oksüdeeriv mürgine gaas. Raskem kui õhk.",
-            act: "Veeudu hajutamiseks. Vältida sattumist veekogusse."
+            un: "1017", name: "KLOOR", type: "tic",
+            iso_s: 60, paz_s_d: 0.2, paz_s_n: 0.8,
+            iso_l: 270, paz_l_d: 1.6, paz_l_n: 6.8
         },
         {
-            n: "BENSIIN", un: "1203", k: "33", c: "3",
-            rs: 30, rl: 60, eds: 0.1, ens: 0.1, edl: 0.3, enl: 0.3,
-            desc: "Tuleohtlik vedelik. Aurud on plahvatusohtlikud.",
-            act: "Vahtkustutus. Jahutada mahuteid."
+            un: "1076", name: "FOSGEEN", type: "tic",
+            iso_s: 100, paz_s_d: 0.8, paz_s_n: 2.7,
+            iso_l: 600, paz_l_d: 5.3, paz_l_n: 11.0
         },
         {
-            n: "PROPAAN", un: "1978", k: "23", c: "2.1",
-            rs: 50, rl: 100, eds: 0.2, ens: 0.2, edl: 0.8, enl: 0.8,
-            desc: "Eriti tuleohtlik gaas. Võib tekitada BLEVE.",
-            act: "Jahutada mahutit. Mitte kustutada leket enne sulgemist."
+            un: "2810", name: "SARIIN (GB)", type: "cwa", // CWA triggers special UI
+            iso_s: 60, paz_s_d: 0.4, paz_s_n: 1.1,
+            iso_l: 300, paz_l_d: 2.1, paz_l_n: 8.5
         },
         {
-            n: "VÄÄVELHAPE", un: "1830", k: "80", c: "8",
-            rs: 30, rl: 30, eds: 0.1, ens: 0.1, edl: 0.1, enl: 0.1,
-            desc: "Tugevalt söövitav. Reageerib veega ägedalt.",
-            act: "Mitte lisada vett! Neutraliseerida lubjaga."
+            un: "2810", name: "VX AINE", type: "cwa",
+            iso_s: 30, paz_s_d: 0.1, paz_s_n: 0.2,
+            iso_l: 60, paz_l_d: 0.2, paz_l_n: 0.2
         },
         {
-            n: "SARIIN (GB)", un: "2810", k: "66", c: "6.1",
-            rs: 60, rl: 300, eds: 0.4, ens: 1.1, edl: 2.1, enl: 8.5,
-            desc: "Närvimürk. Väga ohtlik sissehingamisel ja nahakontaktil.",
-            act: "Täiskaitse. Atropiin. Kohene dekontaminatsioon."
+            un: "1051", name: "VESINIKTSÜANIID", type: "tic",
+            iso_s: 30, paz_s_d: 0.1, paz_s_n: 0.2,
+            iso_l: 100, paz_l_d: 0.5, paz_l_n: 1.7
         }
     ];
 
-    // --- STATE ---
-    let currentItem = null;
-    let size = 'small'; // small, large
-    let time = 'day';   // day, night
-    let wind = 0;       // km/h
-    let compareList = []; // NEW
+    // --- 2. APP STATE ---
+    let map, hotLayer, pazLayer;
+    let currentChem = null;
+    let state = {
+        spill: 'small', // small, large
+        time: 'day',    // day, night
+        wind: 0,        // degrees (0-360)
+        center: [59.437, 24.7535] // Default Tallinn
+    };
 
-    const list = document.getElementById('list-container');
-    const view = document.getElementById('details-view');
+    // --- 3. INITIALIZATION ---
+    function init() {
+        // Init Leaflet Map
+        map = L.map('map').setView(state.center, 13);
+        
+        // Dark Mode Tiles (CartoDB DarkMatter)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
 
-    // --- RENDER LIST ---
-    function renderList() {
-        const q = document.getElementById('search').value.toLowerCase();
-        list.innerHTML = "";
-
-        const filtered = db.filter(i =>
-            i.n.toLowerCase().includes(q) ||
-            i.un.includes(q) ||
-            i.k.includes(q)
-        );
-
-        filtered.forEach(item => {
-            const el = document.createElement('div');
-            el.className = 'card';
-            el.onclick = () => openDetails(item);
-
-            let badgeColor = '#333';
-            if (item.c.startsWith('3') || item.c.startsWith('2.1')) badgeColor = 'var(--flam)';
-            if (item.c.startsWith('2.3') || item.c.startsWith('6')) badgeColor = 'var(--tox)';
-            if (item.c.startsWith('8')) badgeColor = 'var(--corr)';
-
-            el.innerHTML = `
-                <div class="chem-head">
-                    <div>
-                        <div class="chem-name">${item.n}</div>
-                        <div class="chem-meta">${item.desc}</div>
-                    </div>
-                    <div class="chem-badges">
-                        <span class="badge haz" style="color:${badgeColor}">K ${item.k}</span>
-                        <span class="badge un">UN ${item.un}</span>
-                    </div>
-                </div>
-            `;
-            list.appendChild(el);
-        });
-
-        if (filtered.length === 0) {
-            const el = document.createElement('div');
-            el.className = 'card';
-            el.style.textAlign = 'center';
-            el.style.fontSize = '14px';
-            el.style.color = 'var(--muted)';
-            el.textContent = 'Tulemusi ei leitud.';
-            list.appendChild(el);
+        // Get Real GPS
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                state.center = [pos.coords.latitude, pos.coords.longitude];
+                map.setView(state.center, 15);
+                L.marker(state.center).addTo(map).bindPopup("Sinu asukoht").openPopup();
+            });
         }
     }
 
-    // --- DETAILS & CALCULATOR ---
-    function openDetails(item) {
-        currentItem = item;
-        document.getElementById('d-name').innerText = item.n;
-        document.getElementById('d-un').innerText = "UN " + item.un;
-        document.getElementById('d-kemler').innerText = item.k;
-        document.getElementById('d-class').innerText = item.c;
-        document.getElementById('d-desc').innerText = item.desc;
-        document.getElementById('d-act').innerText = item.act;
+    // --- 4. GEOSPATIAL ALGORITHMIC RENDERING ("Keyhole" Logic) ---
+    function drawZones() {
+        if (!currentChem) return;
 
-        // Kemler decode (упрощённо)
-        let kDesc = "";
-        if (item.k.includes('X')) kDesc += "⛔️ Reageerib veega! ";
-        if (item.k.includes('3')) kDesc += "🔥 Tuleohtlik. ";
-        if (item.k.includes('6')) kDesc += "☠️ Mürgine. ";
-        if (item.k.includes('8')) kDesc += "🧪 Söövitav. ";
-        if (item.k === '268') kDesc = "☠️ Mürgine gaas, söövitav.";
-        document.getElementById('kemler-desc').innerText = kDesc;
+        // Clear old layers
+        if (hotLayer) map.removeLayer(hotLayer);
+        if (pazLayer) map.removeLayer(pazLayer);
 
-        // Reset calc defaults
-        size = 'small';
-        time = 'day';
-        wind = 0;
-        document.getElementById('wind').value = 0;
-        document.getElementById('wind-val').innerText = 0;
-        updateCalcUI();
-        recalc();
+        // 1. Determine Distances based on Matrix (Small/Large + Day/Night)
+        let r_iso = (state.spill === 'small') ? currentChem.iso_s : currentChem.iso_l; // Meters
+        let d_paz_km = 0;
 
-        // Обновить иконку избранного (пока только в памяти)
-        const favBtn = document.getElementById('fav-btn');
-        if (currentItem._fav) {
-            favBtn.classList.add('active');
-            favBtn.textContent = '★';
+        if (state.spill === 'small') {
+            d_paz_km = (state.time === 'day') ? currentChem.paz_s_d : currentChem.paz_s_n;
         } else {
-            favBtn.classList.remove('active');
-            favBtn.textContent = '☆';
+            d_paz_km = (state.time === 'day') ? currentChem.paz_l_d : currentChem.paz_l_n;
         }
+        let d_paz = d_paz_km * 1000; // Convert to meters
 
-        view.style.display = 'block';
+        // Update UI Text
+        document.getElementById('val-iso').innerText = r_iso + " m";
+        document.getElementById('val-paz').innerText = d_paz_km + " km";
+
+        // 2. Draw HOT ZONE (Circle) - Red
+        hotLayer = L.circle(state.center, {
+            color: 'var(--danger)',
+            fillColor: '#f03',
+            fillOpacity: 0.4,
+            radius: r_iso
+        }).addTo(map);
+
+        // 3. Draw PAZ (Protective Action Zone) - "Keyhole" Cone using Turf.js
+        // The PAZ starts at the spill and extends downwind.
+        // We create a polygon: Center -> Tangent Left -> Downwind Left -> Downwind Right -> Tangent Right -> Center
+        
+        const centerPt = turf.point([state.center[1], state.center[0]]); // GeoJSON is Lon, Lat
+        const windBearing = parseInt(state.wind);
+        const coneWidth = 45; // Degrees spread (Standard ERG approach)
+
+        // Calculate polygon points
+        // NOTE: Turf uses degrees from North (0 is North, 90 is East)
+        const p1 = turf.destination(centerPt, r_iso/1000, windBearing - 90); // Tangent approx
+        const p2 = turf.destination(centerPt, d_paz_km, windBearing - coneWidth/2); // Far Left
+        const p3 = turf.destination(centerPt, d_paz_km, windBearing + coneWidth/2); // Far Right
+        const p4 = turf.destination(centerPt, r_iso/1000, windBearing + 90); // Tangent approx
+
+        // In a real precise app, we would calculate exact tangents to the circle. 
+        // For ERG visualization, a cone originating from center overlaid by the circle is standard.
+        
+        const polyCoords = [
+            [state.center[1], state.center[0]], // Start at center
+            p2.geometry.coordinates,
+            p3.geometry.coordinates,
+            [state.center[1], state.center[0]]  // Close loop
+        ];
+
+        // Convert Turf polygon to Leaflet
+        const leafCoords = polyCoords.map(c => [c[1], c[0]]); // Swap back to Lat, Lon
+
+        pazLayer = L.polygon(leafCoords, {
+            color: 'var(--warn)',
+            fillColor: '#ff9f0a',
+            fillOpacity: 0.3,
+            weight: 2
+        }).addTo(map);
+
+        // Fit bounds to see the whole danger area
+        const group = new L.featureGroup([hotLayer, pazLayer]);
+        map.fitBounds(group.getBounds(), {padding: [50, 50]});
     }
 
-    function closeDetails() {
-        view.style.display = 'none';
-    }
+    // --- 5. LOGIC & UI HANDLERS ---
+    
+    function findChem() {
+        const query = document.getElementById('search').value.toLowerCase();
+        const found = db.find(i => i.un.includes(query) || i.name.toLowerCase().includes(query));
 
-    function setParams(type) {
-        if (type === 'small' || type === 'large') size = type;
-        if (type === 'day' || type === 'night') time = type;
-        updateCalcUI();
-        recalc();
-    }
+        if (found) {
+            currentChem = found;
+            document.getElementById('info-box').style.display = 'block';
+            document.getElementById('disp-name').innerText = found.name;
+            document.getElementById('disp-un').innerText = "UN " + found.un;
 
-    function updateCalcUI() {
-        document.getElementById('btn-small').className = 'calc-btn';
-        document.getElementById('btn-large').className = 'calc-btn';
-        document.getElementById('btn-day').className = 'calc-btn';
-        document.getElementById('btn-night').className = 'calc-btn';
+            // CWA Check (Section 2.2)
+            const cwaBanner = document.getElementById('cwa-banner');
+            if (found.type === 'cwa') {
+                cwaBanner.style.display = 'block';
+                document.getElementById('info-box').style.borderColor = '#d500f9'; // Purple border
+            } else {
+                cwaBanner.style.display = 'none';
+                document.getElementById('info-box').style.borderColor = 'var(--accent)';
+            }
 
-        document.getElementById('btn-' + size).className = 'calc-btn active';
-        document.getElementById('btn-' + time).className = 'calc-btn active';
-    }
-
-    function updateWind() {
-        const w = parseInt(document.getElementById('wind').value, 10) || 0;
-        wind = w;
-        document.getElementById('wind-val').innerText = w;
-        recalc();
-    }
-
-    function recalc() {
-        if (!currentItem) return;
-
-        let iso = 0;
-        let evac = 0;
-
-        iso = (size === 'small') ? currentItem.rs : currentItem.rl;
-
-        if (size === 'small') {
-            evac = (time === 'day') ? currentItem.eds : currentItem.ens;
-        } else {
-            evac = (time === 'day') ? currentItem.edl : currentItem.enl;
-        }
-
-        // Примитивная поправка на ветер: до +50% длины при 20 km/h
-        const windFactor = 1 + (wind / 20) * 0.5;
-        const evacAdj = (evac * windFactor).toFixed(2);
-
-        document.getElementById('res-iso').innerText = iso + " m";
-        document.getElementById('res-evac').innerText = evacAdj + " km";
-
-        // Обновить визуальный бар: отношение hot/evac
-        const hotEl = document.getElementById('hazard-hot');
-        const evacEl = document.getElementById('hazard-evac');
-        const evacMeters = evacAdj * 1000;
-        const ratio = Math.max(1, Math.min(5, evacMeters / (iso || 1))); // ограничим
-        hotEl.style.flex = 1;
-        evacEl.style.flex = ratio;
-    }
-
-    // --- FAVORITES (только в памяти) — NEW ---
-    function toggleFavorite(e) {
-        e.stopPropagation();
-        if (!currentItem) return;
-        currentItem._fav = !currentItem._fav;
-        const btn = document.getElementById('fav-btn');
-        if (currentItem._fav) {
-            btn.classList.add('active');
-            btn.textContent = '★';
-        } else {
-            btn.classList.remove('active');
-            btn.textContent = '☆';
-        }
-    }
-
-    // --- COMPARE LOGIC — NEW ---
-    function addToCompare() {
-        if (!currentItem) return;
-        const exists = compareList.find(i => i.un === currentItem.un);
-        if (!exists) {
-            compareList.push(currentItem);
-            updateCompareView();
-            alert("Lisatud võrdlusesse.");
-        } else {
-            alert("See aine on juba võrdluses.");
+            drawZones();
         }
     }
 
-    function updateCompareView() {
-        const empty = document.getElementById('compare-empty');
-        const wrap = document.getElementById('compare-table-wrap');
-        const body = document.getElementById('compare-table-body');
-        body.innerHTML = "";
-
-        if (compareList.length === 0) {
-            empty.style.display = 'block';
-            wrap.style.display = 'none';
-            return;
-        }
-
-        empty.style.display = 'none';
-        wrap.style.display = 'block';
-
-        compareList.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${item.n}</td>
-                <td>${item.un}</td>
-                <td>${item.k}</td>
-                <td>${item.c}</td>
-                <td>${item.rs} m</td>
-                <td>${item.edl} km</td>
-            `;
-            body.appendChild(tr);
-        });
+    function setSpill(val) {
+        state.spill = val;
+        toggleBtns('btn-small', 'btn-large', val);
+        drawZones();
     }
 
-    function clearCompare() {
-        compareList = [];
-        updateCompareView();
+    function setTime(val) {
+        state.time = val;
+        toggleBtns('btn-day', 'btn-night', val);
+        drawZones();
     }
 
-    // --- TOOLS LOGIC — NEW ---
-    function convertLiters() {
-        const v = parseFloat(document.getElementById('l-input').value);
-        const out = document.getElementById('l-result');
-        if (isNaN(v)) {
-            out.textContent = '-';
-            return;
-        }
-        out.textContent = (v / 1000).toFixed(3);
+    function updateWind(val) {
+        state.wind = val;
+        // Direction text logic
+        let dirTxt = "N";
+        if (val > 22 && val <= 67) dirTxt = "NE";
+        if (val > 67 && val <= 112) dirTxt = "E";
+        if (val > 112 && val <= 157) dirTxt = "SE";
+        if (val > 157 && val <= 202) dirTxt = "S";
+        if (val > 202 && val <= 247) dirTxt = "SW";
+        if (val > 247 && val <= 292) dirTxt = "W";
+        if (val > 292 && val <= 337) dirTxt = "NW";
+        
+        document.getElementById('wind-disp').innerText = `${val}° (${dirTxt})`;
+        drawZones();
     }
 
-    function convertGallons() {
-        const v = parseFloat(document.getElementById('gal-input').value);
-        const out = document.getElementById('gal-result');
-        if (isNaN(v)) {
-            out.textContent = '-';
-            return;
-        }
-        out.textContent = (v / 3.785).toFixed(2);
+    function toggleBtns(id1, id2, val) {
+        document.getElementById(id1).classList.remove('active');
+        document.getElementById(id2).classList.remove('active');
+        if (val === 'small' || val === 'day') document.getElementById(id1).classList.add('active');
+        else document.getElementById(id2).classList.add('active');
     }
 
-    function calcVolume() {
-        const l = parseFloat(document.getElementById('len-input').value);
-        const w = parseFloat(document.getElementById('wid-input').value);
-        const h = parseFloat(document.getElementById('hei-input').value);
-        const out = document.getElementById('vol-result');
-        if (isNaN(l) || isNaN(w) || isNaN(h)) {
-            out.textContent = '-';
-            return;
-        }
-        const m3 = l * w * h;
-        const liters = m3 * 1000;
-        out.textContent = m3.toFixed(2) + " m³ (" + liters.toFixed(0) + " L)";
+    // Guide 147 (Li-Ion)
+    function activateLithiumMode() {
+        alert("LITHIUM-ION REŽIIM (Guide 147):\n1. Vesi: Kasuta suures koguses jahutamiseks.\n2. Oht: Taassüttimine võimalik 24h jooksul.\n3. Eralda: Vähemalt 15m teistest objektidest.");
     }
 
-    // --- NAVIGATION BETWEEN SCREENS — NEW ---
-    function showScreen(name) {
-        document.getElementById('main-screen').classList.remove('active');
-        document.getElementById('compare-screen').classList.remove('active');
-        document.getElementById('tools-screen').classList.remove('active');
+    // Start
+    init();
 
-        document.getElementById('nav-main').classList.remove('active');
-        document.getElementById('nav-compare').classList.remove('active');
-        document.getElementById('nav-tools').classList.remove('active');
-
-        if (name === 'main') {
-            document.getElementById('main-screen').classList.add('active');
-            document.getElementById('nav-main').classList.add('active');
-        } else if (name === 'compare') {
-            document.getElementById('compare-screen').classList.add('active');
-            document.getElementById('nav-compare').classList.add('active');
-            updateCompareView();
-        } else if (name === 'tools') {
-            document.getElementById('tools-screen').classList.add('active');
-            document.getElementById('nav-tools').classList.add('active');
-        }
-
-        // При смене вкладки закрываем details, чтобы не мешал
-        closeDetails();
-    }
-
-    // Init
-    renderList();
 </script>
 </body>
 </html>
