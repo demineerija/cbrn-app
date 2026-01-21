@@ -2,357 +2,856 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="CBRN Pääste">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/144/radioactive.png">
-    
-    <title>CBRN Ohutusjuhend</title>
+    <title>CBRN Keemiaarvuti</title>
     <style>
         :root {
-            --bg: #000000;
+            --bg: #121212;
             --card: #1c1c1e;
-            --header: rgba(28, 28, 30, 0.95);
-            --accent: #0a84ff;
-            --danger: #ff453a;
-            --warn: #ff9f0a;
-            --safe: #32d74b;
-            --rad: #ffd60a;
             --text: #ffffff;
-            --subtext: #8e8e93;
-            --border: #38383a;
+            --muted: #8e8e93;
+            --accent: #0a84ff;
+            --tox: #bf5af2;
+            --flam: #ff3b30;
+            --corr: #ff9f0a;
+            --border: #2c2c2e;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-            background-color: var(--bg);
+            background: var(--bg);
             color: var(--text);
-            margin: 0; padding: 0;
-            padding-bottom: 100px;
+            margin: 0;
+            padding: 0;
+            padding-bottom: 90px;
+            -webkit-user-select: none;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
 
         /* HEADER */
         header {
-            position: sticky; top: 0; z-index: 1000;
-            background: var(--header);
-            backdrop-filter: blur(20px);
-            padding: 50px 16px 15px;
+            background: rgba(28,28,30,0.95);
+            padding: 50px 20px 15px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
             border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(10px);
         }
-        .app-title { font-size: 24px; font-weight: 800; }
-        .app-sub { font-size: 12px; color: var(--subtext); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+        h1 { margin: 0; font-size: 26px; font-weight: 800; }
+        .subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 500; }
 
-        /* TABS */
-        .view-section { display: none; padding: 16px; animation: fadeIn 0.3s ease; }
-        .view-section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* SUB-NAV (Radiation) */
-        .sub-nav { display: flex; gap: 8px; margin-bottom: 20px; background: #2c2c2e; padding: 4px; border-radius: 10px; }
-        .sub-btn { 
-            flex: 1; padding: 8px; border-radius: 7px; 
-            text-align: center; font-size: 13px; font-weight: 600; color: #888;
+        /* SEARCH */
+        .search-box {
+            width: 100%;
+            background: #000;
+            border: 1px solid #444;
+            padding: 14px 40px 14px 14px;
+            border-radius: 12px;
+            color: white;
+            font-size: 18px;
+            box-sizing: border-box;
+            margin-top: 15px;
+            outline: none;
         }
-        .sub-btn.active { background: #636366; color: white; }
+        .search-wrap { position: relative; }
+        .search-icon { position: absolute; right: 14px; top: 28px; color: #666; font-size: 18px; }
+
+        /* CONTAINERS */
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: block;
+        }
 
         /* CARDS */
-        .card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
-        
-        /* SAFETY RULES STYLING */
-        .rule-box { 
-            border-left: 4px solid var(--subtext); 
-            padding-left: 12px; margin-bottom: 16px; 
+        .container { padding: 16px; }
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            transition: transform 0.2s;
         }
-        .rule-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; display: block; }
-        .rule-desc { font-size: 14px; color: #ccc; line-height: 1.4; }
-        
-        .border-red { border-left-color: var(--danger); }
-        .border-yellow { border-left-color: var(--rad); }
-        .border-green { border-left-color: var(--safe); }
-
-        /* DATA TABLE */
-        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
-        .data-table td { padding: 8px 0; border-bottom: 1px solid #333; }
-        .data-table tr:last-child td { border-bottom: none; }
-        .val { font-weight: 700; float: right; font-family: monospace; font-size: 15px; }
-
-        /* TOOLS & CALCULATORS */
-        input, select {
-            width: 100%; padding: 14px; background: #2c2c2e; border: 1px solid #444;
-            border-radius: 10px; color: white; font-size: 16px; margin-bottom: 10px; box-sizing: border-box;
-        }
-        .btn-action {
-            width: 100%; padding: 16px; background: var(--rad); color: black;
-            font-weight: 800; border: none; border-radius: 12px; font-size: 16px; margin-top: 10px;
+        .card:active {
+            transform: scale(0.98);
+            background: #252525;
         }
 
-        /* NAVIGATION BAR */
-        .nav-bar {
-            position: fixed; bottom: 0; width: 100%; background: rgba(28,28,30,0.95);
-            backdrop-filter: blur(20px); border-top: 1px solid var(--border);
-            display: flex; padding-bottom: env(safe-area-inset-bottom); padding-top: 8px;
+        /* LIST ITEM STYLES */
+        .chem-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .chem-name { font-size: 18px; font-weight: 700; color: white; }
+        .chem-meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
+        .chem-badges { display: flex; gap: 6px; flex-shrink: 0; }
+        .badge {
+            font-size: 12px;
+            font-family: monospace;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: #333;
+            color: #ddd;
         }
-        .nav-item { flex: 1; text-align: center; color: #666; font-size: 10px; padding: 4px; }
+        .badge.un { background: var(--accent); color: white; }
+        .badge.haz { border: 1px solid #555; }
+
+        /* MODAL / DETAILS VIEW */
+        #details-view {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: 200;
+            overflow-y: auto;
+            display: none;
+            padding-bottom: 70px;
+        }
+        .modal-header {
+            padding: 50px 20px 20px;
+            background: rgba(28,28,30,0.95);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        .close-btn {
+            background: #333;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .fav-btn { /* NEW */
+            background: transparent;
+            border: none;
+            font-size: 22px;
+            margin-left: 8px;
+            cursor: pointer;
+        }
+        .fav-btn.active { color: #ffd60a; }
+
+        .modal-title-row { display: flex; align-items: center; gap: 4px; }
+
+        /* CALCULATOR GRID */
+        .calc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .calc-btn {
+            background: #2c2c2e;
+            color: #888;
+            border: 1px solid #333;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-align: center;
+            font-size: 13px;
+        }
+        .calc-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .result-zone {
+            background: #111;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #333;
+            margin-top: 10px;
+        }
+        .res-val { font-size: 32px; font-weight: 800; display: block; margin: 5px 0; }
+        .res-lbl { font-size: 12px; color: #888; text-transform: uppercase; }
+        .res-color-red { color: var(--flam); }
+        .res-color-orange { color: var(--corr); }
+
+        /* HAZARD BAR (визуальные зоны) — NEW */
+        .hazard-bar {
+            display: flex;
+            width: 100%;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+            border: 1px solid #333;
+        }
+        .hazard-hot {
+            background: var(--flam);
+            flex: 1;
+        }
+        .hazard-evac {
+            background: var(--corr);
+            flex: 3;
+        }
+        .hazard-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        /* WIND SLIDER — NEW */
+        .slider-row {
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .slider-row input[type=range] {
+            width: 100%;
+        }
+        .slider-value {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* KEMLER DECODER */
+        .kemler-row { display: flex; gap: 10px; margin-bottom: 5px; }
+        .kemler-char {
+            width: 30px; height: 30px;
+            background: var(--corr);
+            color: black;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        /* NAV */
+        .nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: rgba(28,28,30,0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 150;
+        }
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 8px 4px 10px;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 600;
+        }
         .nav-item.active { color: var(--accent); }
-        .nav-icon { font-size: 24px; display: block; margin-bottom: 2px; }
+        .icon { font-size: 20px; display: block; margin-bottom: 2px; }
 
-        /* CHEM LIST STYLES */
-        .chem-item { padding: 14px; border-bottom: 1px solid #333; cursor: pointer; }
-        .chem-name { font-weight: 700; font-size: 17px; }
-        .chem-sub { font-size: 12px; color: #888; margin-top: 4px; }
-        .chem-badge { float: right; background: #333; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: var(--accent); }
+        /* TABLES (для сравнения) — NEW */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th, td {
+            padding: 6px 4px;
+            border-bottom: 1px solid #333;
+            text-align: left;
+        }
+        th {
+            color: var(--muted);
+            font-weight: 600;
+        }
 
+        .btn-secondary { /* NEW */
+            background: #2c2c2e;
+            border-radius: 10px;
+            padding: 10px 14px;
+            border: 1px solid #333;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .btn-primary { /* NEW */
+            background: var(--accent);
+            border-radius: 10px;
+            padding: 10px 14px;
+            border: none;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* TOOLS INPUTS — NEW */
+        .input-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .input-row input {
+            flex: 1;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #000;
+            color: #fff;
+            font-size: 13px;
+        }
+        .hint {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* PRINT — NEW: печать только деталей */
+        @media print {
+            body { background: #fff; color: #000; }
+            #main-screen, #compare-screen, #tools-screen, .nav { display: none !important; }
+            #details-view {
+                position: static;
+                display: block !important;
+                background: #fff;
+            }
+            .modal-header { position: static; background: #fff; border-bottom: 1px solid #ccc; }
+            .close-btn, .fav-btn { display: none; }
+            .card { border-color: #ccc; }
+        }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="app-title">CBRN <span style="color:var(--accent)">ULTIMATE</span></div>
-    <div class="app-sub">Päästeameti Juhendi alusel (2023)</div>
-</header>
-
-<div id="view-rad" class="view-section active">
-    
-    <div class="sub-nav">
-        <div class="sub-btn active" onclick="subTab('rules')">Ohutusreeglid</div>
-        <div class="sub-btn" onclick="subTab('zones')">Tsoonid & Hinnang</div>
-        <div class="sub-btn" onclick="subTab('calc')">Kalkulaator</div>
-    </div>
-
-    <div id="sub-rules" class="sub-content">
-        
-        <div class="card">
-            <h3 style="margin-top:0; color:var(--rad)">☢️ Põhireeglid (Peatükk 6)</h3>
-            
-            <div class="rule-box border-red">
-                <span class="rule-title" style="color:var(--danger)">SISENEMISKEELD > 100 mSv/h</span>
-                <span class="rule-desc">Alasse ei tohi siseneda, v.a inimelu päästmiseks (max 30 min).</span>
-            </div>
-
-            <div class="rule-box border-yellow">
-                <span class="rule-title" style="color:var(--rad)">Kaitsevarustus (6.3)</span>
-                <span class="rule-desc">
-                    • Tüüp 5 tolmukindel ülikond<br>
-                    • Otsenäiduga dosimeeter (kohustuslik)<br>
-                    • Hingamiskaitse: P3 filter või suruõhuaparaat
-                </span>
-            </div>
-
-            <div class="rule-box border-green">
-                <span class="rule-title" style="color:var(--safe)">Saasteärastus (6.5)</span>
-                <span class="rule-desc">
-                    Mõõtepunkt turvaalalas (< 0,3 µSv/h).<br>
-                    <strong>< 1 µSv/h:</strong> Puhas (võib koju saata pesema).<br>
-                    <strong>> 1 µSv/h:</strong> Vajab kohest saasteärastust.
-                </span>
-            </div>
+<!-- MAIN LIST SCREEN -->
+<div id="main-screen" class="screen active">
+    <header>
+        <h1>Keemiaarvuti</h1>
+        <div class="subtitle">Ohtlike ainete andmebaas</div>
+        <div class="search-wrap">
+            <input type="text" id="search" class="search-box" placeholder="UN, Nimi (nt 1203, Kloor)..." oninput="renderList()">
+            <span class="search-icon">🔍</span>
         </div>
+    </header>
 
-        <div class="card">
-            <h3 style="margin-top:0">Varustuse saastumine (6.10)</h3>
-            <table class="data-table">
-                <tr>
-                    <td>Korduvkasutatav ohualas</td>
-                    <td class="val" style="color:var(--safe)">1 - 10 µSv/h</td>
-                </tr>
-                <tr>
-                    <td>Ainult elupäästeks</td>
-                    <td class="val" style="color:var(--warn)">10 - 100 µSv/h</td>
-                </tr>
-                <tr>
-                    <td>Isoleerida / Ohtlik</td>
-                    <td class="val" style="color:var(--danger)">> 100 µSv/h</td>
-                </tr>
-            </table>
-        </div>
-
-    </div>
-
-    <div id="sub-zones" class="sub-content" style="display:none">
-        
-        <div class="card">
-            <h3 style="margin-top:0">Ohuala raadiused (6.8.1)</h3>
-            <p style="font-size:12px; color:#888">Esmane hinnang enne mõõtmisi:</p>
-            
-            <table class="data-table">
-                <tr>
-                    <td>Vigastatud / Varjestamata allikas</td>
-                    <td class="val" style="color:var(--danger)">50 m</td>
-                </tr>
-                <tr>
-                    <td>Allika leke</td>
-                    <td class="val" style="color:var(--danger)">100 m</td>
-                </tr>
-                <tr>
-                    <td>Tulekahju / Plahvatus</td>
-                    <td class="val" style="color:var(--danger)">400 m</td>
-                </tr>
-            </table>
-        </div>
-
-        <div class="card">
-            <h3 style="margin-top:0">Mõõtmised</h3>
-            <div class="rule-box border-red">
-                <span class="rule-title">Ohuala piir</span>
-                <span class="rule-desc">Määratakse doosikiirusel <strong>100 µSv/h</strong> (6.8.3).</span>
-            </div>
-            <div class="rule-box border-yellow">
-                <span class="rule-title">Lähenemine</span>
-                <span class="rule-desc">Olukorda hinnata min 30m kauguselt. Ilma mõõtjata lähenemine keelatud.</span>
-            </div>
-        </div>
-    </div>
-
-    <div id="sub-calc" class="sub-content" style="display:none">
-        <div class="card">
-            <h3 style="margin-top:0; color:var(--rad)">Ühikute teisendaja</h3>
-            <div style="display:flex; gap:10px">
-                <input type="number" id="r-val" placeholder="0" oninput="calcRad()">
-                <select id="r-unit" onchange="calcRad()">
-                    <option value="uSv">µSv/h</option>
-                    <option value="mSv">mSv/h</option>
-                    <option value="R">R/h (Vana)</option>
-                </select>
-            </div>
-            <div style="text-align:center; font-family:monospace; font-size:32px; color:var(--rad); margin:15px 0" id="rad-res">
-                0 µSv/h
-            </div>
-            <p style="font-size:11px; color:#666; text-align:center">1 R ≈ 10 mSv = 10 000 µSv</p>
-        </div>
-
-        <div class="card">
-            <h3 style="margin-top:0">Viibimisaeg (Stay Time)</h3>
-            <label style="font-size:12px; color:#aaa">Kiirgus tsoonis (µSv/h)</label>
-            <input type="number" id="stay-rate" placeholder="nt 500000 (ehk 500 mSv)">
-            
-            <label style="font-size:12px; color:#aaa">Doosi limiit (mSv)</label>
-            <input type="number" id="stay-limit" value="100" placeholder="Elupääste: 100">
-            
-            <button class="btn-action" onclick="calcStay()">Arvuta Aeg</button>
-            <div id="stay-res" style="text-align:center; font-size:18px; font-weight:bold; margin-top:15px">--</div>
-            <p style="font-size:11px; color:#666; text-align:center; margin-top:5px">Punkt 6.6.11: Üle 100 mSv/h max 30 min (ainult elupääste).</p>
-        </div>
-    </div>
-
+    <div id="list-container" class="container"></div>
 </div>
 
-<div id="view-chem" class="view-section">
-    <div class="card">
-        <input type="text" id="search" placeholder="Otsi ainet (UN, Nimi)..." oninput="filterChem()">
-    </div>
-    <div id="chem-list" class="card" style="padding:0">
+<!-- COMPARE SCREEN — NEW -->
+<div id="compare-screen" class="screen">
+    <header>
+        <h1>Võrdlus</h1>
+        <div class="subtitle">Valitud ainete põhiparameetrid</div>
+    </header>
+    <div class="container">
+        <div id="compare-empty" class="card" style="text-align:center; font-size:14px; color:var(--muted);">
+            Lisa aineid võrdluseks detailvaates nupuga „Lisa võrdlusesse”.
         </div>
+        <div id="compare-table-wrap" style="display:none;">
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Aine</th>
+                            <th>UN</th>
+                            <th>Kemler</th>
+                            <th>Klass</th>
+                            <th>Iso (väike)</th>
+                            <th>Evac päev (suur)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="compare-table-body"></tbody>
+                </table>
+            </div>
+            <button class="btn-secondary" onclick="clearCompare()">Tühjenda võrdlus</button>
+        </div>
+    </div>
 </div>
 
-<div class="nav-bar">
-    <div class="nav-item active" onclick="switchMain('rad', this)">
-        <span class="nav-icon">☢️</span>Kiirgus
+<!-- TOOLS SCREEN — NEW -->
+<div id="tools-screen" class="screen">
+    <header>
+        <h1>Tööriistad</h1>
+        <div class="subtitle">Kiired abiarvutused</div>
+    </header>
+    <div class="container">
+
+        <div class="card">
+            <div class="subtitle">Ühikute teisendamine</div>
+            <div style="margin-top:8px; font-size:13px;">Liitrid → m³</div>
+            <div class="input-row">
+                <input type="number" id="l-input" placeholder="Liitrid" oninput="convertLiters()">
+            </div>
+            <div class="hint">1 m³ = 1000 L</div>
+            <div style="margin-top:6px; font-size:14px;">
+                Tulemus: <span id="l-result">-</span> m³
+            </div>
+
+            <hr style="border:none; border-top:1px solid #333; margin:16px 0;">
+
+            <div style="margin-top:4px; font-size:13px;">Liitrid → USA gallonid (ligikaudne)</div>
+            <div class="input-row">
+                <input type="number" id="gal-input" placeholder="Liitrid" oninput="convertGallons()">
+            </div>
+            <div class="hint">1 gal ≈ 3.785 L</div>
+            <div style="margin-top:6px; font-size:14px;">
+                Tulemus: <span id="gal-result">-</span> gal
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="subtitle">Mahutavuse kalkulaator</div>
+            <div class="hint">Ligikaudne risttahuka (paagi) maht. Mõõdud meetrites.</div>
+            <div class="input-row">
+                <input type="number" id="len-input" placeholder="Pikkus (m)" step="0.1">
+                <input type="number" id="wid-input" placeholder="Laius (m)" step="0.1">
+            </div>
+            <div class="input-row">
+                <input type="number" id="hei-input" placeholder="Kõrgus (m)" step="0.1">
+            </div>
+            <button class="btn-primary" style="margin-top:10px;" onclick="calcVolume()">Arvuta maht</button>
+            <div style="margin-top:8px; font-size:14px;">
+                Maht: <span id="vol-result">-</span>
+            </div>
+        </div>
+
     </div>
-    <div class="nav-item" onclick="switchMain('chem', this)">
-        <span class="nav-icon">🧪</span>Keemia
+</div>
+
+<!-- DETAILS VIEW (MODAL) -->
+<div id="details-view">
+    <div class="modal-header">
+        <div>
+            <div class="subtitle" id="d-un">UN ----</div>
+            <div class="modal-title-row">
+                <h1 id="d-name" style="font-size: 22px; margin:0;">Aine Nimi</h1>
+                <button class="fav-btn" id="fav-btn" onclick="toggleFavorite(event)">☆</button>
+            </div>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <button class="btn-secondary" onclick="window.print()">PDF / Print</button>
+            <button class="close-btn" onclick="closeDetails()">✕</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card" style="border-left: 4px solid var(--accent)">
+            <div style="display:flex; justify-content:space-between; gap:12px;">
+                <div>
+                    <div class="subtitle">OHU NUMBER (KEMLER)</div>
+                    <h2 id="d-kemler" style="margin:5px 0">--</h2>
+                </div>
+                <div>
+                    <div class="subtitle">OHUKLASS</div>
+                    <h2 id="d-class" style="margin:5px 0">--</h2>
+                </div>
+            </div>
+            <div id="kemler-desc" style="margin-top:10px; font-size:14px; line-height:1.4; color:#ccc;"></div>
+        </div>
+
+        <div class="subtitle" style="margin-bottom:10px; margin-left:5px">OHUALA ARVUTAMINE</div>
+
+        <div class="card">
+            <div class="calc-grid">
+                <div class="calc-btn active" id="btn-small" onclick="setParams('small')">VÄIKE LEKE<br><span style="font-size:10px; font-weight:400">(&lt; 200 L)</span></div>
+                <div class="calc-btn" id="btn-large" onclick="setParams('large')">SUUR LEKE<br><span style="font-size:10px; font-weight:400">(&gt; 200 L)</span></div>
+            </div>
+
+            <div class="calc-grid">
+                <div class="calc-btn active" id="btn-day" onclick="setParams('day')">PÄEV<br><span style="font-size:10px; font-weight:400">(Ebastabiilne)</span></div>
+                <div class="calc-btn" id="btn-night" onclick="setParams('night')">ÖÖ<br><span style="font-size:10px; font-weight:400">(Inversioon)</span></div>
+            </div>
+
+            <!-- NEW: ветровые условия -->
+            <div class="slider-row">
+                Tuule kiirus: <span class="slider-value" id="wind-val">0</span> km/h
+                <input type="range" id="wind" min="0" max="20" step="1" value="0" oninput="updateWind()">
+                <div class="hint">Lihtsustatud korrigeerimine: mida suurem tuul, seda pikem allatuule tsoon.</div>
+            </div>
+
+            <div class="result-zone" style="border-color: var(--flam)">
+                <span class="res-lbl">ISOLATSIOONIALA (KÕIK SUUNAD)</span>
+                <span class="res-val res-color-red" id="res-iso">-- m</span>
+                <span style="font-size:12px; color:#666">Kuum tsoon (Hot Zone)</span>
+            </div>
+
+            <div class="result-zone" style="border-color: var(--corr); margin-top:15px">
+                <span class="res-lbl">EVAKUATSIOON (ALLATUULT)</span>
+                <span class="res-val res-color-orange" id="res-evac">-- km</span>
+                <span style="font-size:12px; color:#666">Kaitsetegevuse ulatus</span>
+
+                <!-- NEW: визуальный бар -->
+                <div class="hazard-bar">
+                    <div class="hazard-hot" id="hazard-hot"></div>
+                    <div class="hazard-evac" id="hazard-evac"></div>
+                </div>
+                <div class="hazard-labels">
+                    <span>Kuum tsoon</span>
+                    <span>Evakua tsoon</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="subtitle">OHTLIKKUS</div>
+            <p id="d-desc" style="line-height:1.5; font-size:15px; color:#ddd">--</p>
+        </div>
+
+        <div class="card" style="background:rgba(50,215,75,0.1); border-color:#32d74b">
+            <div class="subtitle" style="color:#32d74b">TEGEVUSJUHIS (T-Juhis)</div>
+            <p id="d-act" style="line-height:1.5; font-size:15px;">--</p>
+        </div>
+
+        <div class="card" style="display:flex; gap:8px; justify-content:space-between; align-items:center;">
+            <button class="btn-secondary" onclick="addToCompare()">Lisa võrdlusesse</button>
+            <span style="font-size:12px; color:var(--muted);">Võrdle mitut ainet eraldi vaates.</span>
+        </div>
+    </div>
+</div>
+
+<!-- NAVIGATION -->
+<div class="nav">
+    <div class="nav-item active" id="nav-main" onclick="showScreen('main')">
+        <span class="icon">📚</span>
+        ANDMEBAAS
+    </div>
+    <div class="nav-item" id="nav-compare" onclick="showScreen('compare')">
+        <span class="icon">⚖️</span>
+        VÕRDLUS
+    </div>
+    <div class="nav-item" id="nav-tools" onclick="showScreen('tools')">
+        <span class="icon">🧮</span>
+        TÖÖRIISTAD
     </div>
 </div>
 
 <script>
-    // --- DATABASE (Example data - expand as needed) ---
-    const chemDB = [
-        {n: "Ammoniaak", un: "1005", k: "268", d: "Mürgine gaas"},
-        {n: "Kloor", un: "1017", k: "268", d: "Mürgine, söövitav"},
-        {n: "Bensiin", un: "1203", k: "33", d: "Tuleohtlik"},
-        {n: "Propaan", un: "1978", k: "23", d: "Plahvatusohtlik gaas"}
+    // --- DATABASE ---
+    const db = [
+        {
+            n: "AMMONIAAK (Veevaba)", un: "1005", k: "268", c: "2.3",
+            rs: 30, rl: 150, eds: 0.1, ens: 0.2, edl: 0.8, enl: 2.3,
+            desc: "Mürgine gaas. Söövitav. Reageerib veega (kuumeneb).",
+            act: "Veeudu gaasi sidumiseks. Happed neutraliseerivad."
+        },
+        {
+            n: "KLOOR", un: "1017", k: "268", c: "2.3",
+            rs: 60, rl: 270, eds: 0.2, ens: 0.8, edl: 1.6, enl: 6.8,
+            desc: "Oksüdeeriv mürgine gaas. Raskem kui õhk.",
+            act: "Veeudu hajutamiseks. Vältida sattumist veekogusse."
+        },
+        {
+            n: "BENSIIN", un: "1203", k: "33", c: "3",
+            rs: 30, rl: 60, eds: 0.1, ens: 0.1, edl: 0.3, enl: 0.3,
+            desc: "Tuleohtlik vedelik. Aurud on plahvatusohtlikud.",
+            act: "Vahtkustutus. Jahutada mahuteid."
+        },
+        {
+            n: "PROPAAN", un: "1978", k: "23", c: "2.1",
+            rs: 50, rl: 100, eds: 0.2, ens: 0.2, edl: 0.8, enl: 0.8,
+            desc: "Eriti tuleohtlik gaas. Võib tekitada BLEVE.",
+            act: "Jahutada mahutit. Mitte kustutada leket enne sulgemist."
+        },
+        {
+            n: "VÄÄVELHAPE", un: "1830", k: "80", c: "8",
+            rs: 30, rl: 30, eds: 0.1, ens: 0.1, edl: 0.1, enl: 0.1,
+            desc: "Tugevalt söövitav. Reageerib veega ägedalt.",
+            act: "Mitte lisada vett! Neutraliseerida lubjaga."
+        },
+        {
+            n: "SARIIN (GB)", un: "2810", k: "66", c: "6.1",
+            rs: 60, rl: 300, eds: 0.4, ens: 1.1, edl: 2.1, enl: 8.5,
+            desc: "Närvimürk. Väga ohtlik sissehingamisel ja nahakontaktil.",
+            act: "Täiskaitse. Atropiin. Kohene dekontaminatsioon."
+        }
     ];
 
-    // --- LOGIC ---
-    
-    // Sub-tab switching
-    function subTab(id) {
-        document.querySelectorAll('.sub-content').forEach(el => el.style.display = 'none');
-        document.getElementById('sub-' + id).style.display = 'block';
-        
-        document.querySelectorAll('.sub-btn').forEach(el => el.classList.remove('active'));
-        event.target.classList.add('active');
-    }
+    // --- STATE ---
+    let currentItem = null;
+    let size = 'small'; // small, large
+    let time = 'day';   // day, night
+    let wind = 0;       // km/h
+    let compareList = []; // NEW
 
-    // Main View switching
-    function switchMain(id, el) {
-        document.querySelectorAll('.view-section').forEach(d => d.classList.remove('active'));
-        document.getElementById('view-' + id).classList.add('active');
-        
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        el.classList.add('active');
-    }
+    const list = document.getElementById('list-container');
+    const view = document.getElementById('details-view');
 
-    // Radiation Converter
-    function calcRad() {
-        const val = parseFloat(document.getElementById('r-val').value);
-        const unit = document.getElementById('r-unit').value;
-        const res = document.getElementById('rad-res');
+    // --- RENDER LIST ---
+    function renderList() {
+        const q = document.getElementById('search').value.toLowerCase();
+        list.innerHTML = "";
 
-        if(isNaN(val)) { res.innerText = "0 µSv/h"; return; }
+        const filtered = db.filter(i =>
+            i.n.toLowerCase().includes(q) ||
+            i.un.includes(q) ||
+            i.k.includes(q)
+        );
 
-        let uSv = 0;
-        if(unit === 'uSv') uSv = val;
-        if(unit === 'mSv') uSv = val * 1000;
-        if(unit === 'R') uSv = val * 10000; 
+        filtered.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'card';
+            el.onclick = () => openDetails(item);
 
-        // Auto format
-        let text = "";
-        if(uSv < 1000) text = uSv.toFixed(1) + " µSv/h";
-        else if(uSv < 1000000) text = (uSv/1000).toFixed(2) + " mSv/h";
-        else text = (uSv/1000000).toFixed(3) + " Sv/h";
+            let badgeColor = '#333';
+            if (item.c.startsWith('3') || item.c.startsWith('2.1')) badgeColor = 'var(--flam)';
+            if (item.c.startsWith('2.3') || item.c.startsWith('6')) badgeColor = 'var(--tox)';
+            if (item.c.startsWith('8')) badgeColor = 'var(--corr)';
 
-        res.innerText = text;
-    }
+            el.innerHTML = `
+                <div class="chem-head">
+                    <div>
+                        <div class="chem-name">${item.n}</div>
+                        <div class="chem-meta">${item.desc}</div>
+                    </div>
+                    <div class="chem-badges">
+                        <span class="badge haz" style="color:${badgeColor}">K ${item.k}</span>
+                        <span class="badge un">UN ${item.un}</span>
+                    </div>
+                </div>
+            `;
+            list.appendChild(el);
+        });
 
-    // Stay Time Calc
-    function calcStay() {
-        const rate_uSv = parseFloat(document.getElementById('stay-rate').value);
-        const limit_mSv = parseFloat(document.getElementById('stay-limit').value);
-        const res = document.getElementById('stay-res');
-
-        if(!rate_uSv || !limit_mSv) { res.innerText = "--"; return; }
-
-        const rate_mSv = rate_uSv / 1000;
-        const hours = limit_mSv / rate_mSv;
-        const mins = Math.floor(hours * 60);
-
-        if(mins < 60) res.innerText = mins + " minutit";
-        else {
-            const h = Math.floor(mins/60);
-            const m = mins % 60;
-            res.innerText = `${h}h ${m}min`;
-        }
-        
-        if (mins > 30 && rate_uSv >= 100000) {
-            res.innerHTML += "<br><span style='color:red; font-size:12px'>(NB! Üle 100 mSv/h on lubatud max 30 min!)</span>";
+        if (filtered.length === 0) {
+            const el = document.createElement('div');
+            el.className = 'card';
+            el.style.textAlign = 'center';
+            el.style.fontSize = '14px';
+            el.style.color = 'var(--muted)';
+            el.textContent = 'Tulemusi ei leitud.';
+            list.appendChild(el);
         }
     }
 
-    // Chem Search
-    const listEl = document.getElementById('chem-list');
-    function renderChem(data) {
-        listEl.innerHTML = "";
-        data.forEach(i => {
-            const div = document.createElement('div');
-            div.className = 'chem-item';
-            div.innerHTML = `<div class="chem-name">${i.n} <span class="chem-badge">UN ${i.un}</span></div><div class="chem-sub">${i.d} (Oht: ${i.k})</div>`;
-            listEl.appendChild(div);
+    // --- DETAILS & CALCULATOR ---
+    function openDetails(item) {
+        currentItem = item;
+        document.getElementById('d-name').innerText = item.n;
+        document.getElementById('d-un').innerText = "UN " + item.un;
+        document.getElementById('d-kemler').innerText = item.k;
+        document.getElementById('d-class').innerText = item.c;
+        document.getElementById('d-desc').innerText = item.desc;
+        document.getElementById('d-act').innerText = item.act;
+
+        // Kemler decode (упрощённо)
+        let kDesc = "";
+        if (item.k.includes('X')) kDesc += "⛔️ Reageerib veega! ";
+        if (item.k.includes('3')) kDesc += "🔥 Tuleohtlik. ";
+        if (item.k.includes('6')) kDesc += "☠️ Mürgine. ";
+        if (item.k.includes('8')) kDesc += "🧪 Söövitav. ";
+        if (item.k === '268') kDesc = "☠️ Mürgine gaas, söövitav.";
+        document.getElementById('kemler-desc').innerText = kDesc;
+
+        // Reset calc defaults
+        size = 'small';
+        time = 'day';
+        wind = 0;
+        document.getElementById('wind').value = 0;
+        document.getElementById('wind-val').innerText = 0;
+        updateCalcUI();
+        recalc();
+
+        // Обновить иконку избранного (пока только в памяти)
+        const favBtn = document.getElementById('fav-btn');
+        if (currentItem._fav) {
+            favBtn.classList.add('active');
+            favBtn.textContent = '★';
+        } else {
+            favBtn.classList.remove('active');
+            favBtn.textContent = '☆';
+        }
+
+        view.style.display = 'block';
+    }
+
+    function closeDetails() {
+        view.style.display = 'none';
+    }
+
+    function setParams(type) {
+        if (type === 'small' || type === 'large') size = type;
+        if (type === 'day' || type === 'night') time = type;
+        updateCalcUI();
+        recalc();
+    }
+
+    function updateCalcUI() {
+        document.getElementById('btn-small').className = 'calc-btn';
+        document.getElementById('btn-large').className = 'calc-btn';
+        document.getElementById('btn-day').className = 'calc-btn';
+        document.getElementById('btn-night').className = 'calc-btn';
+
+        document.getElementById('btn-' + size).className = 'calc-btn active';
+        document.getElementById('btn-' + time).className = 'calc-btn active';
+    }
+
+    function updateWind() {
+        const w = parseInt(document.getElementById('wind').value, 10) || 0;
+        wind = w;
+        document.getElementById('wind-val').innerText = w;
+        recalc();
+    }
+
+    function recalc() {
+        if (!currentItem) return;
+
+        let iso = 0;
+        let evac = 0;
+
+        iso = (size === 'small') ? currentItem.rs : currentItem.rl;
+
+        if (size === 'small') {
+            evac = (time === 'day') ? currentItem.eds : currentItem.ens;
+        } else {
+            evac = (time === 'day') ? currentItem.edl : currentItem.enl;
+        }
+
+        // Примитивная поправка на ветер: до +50% длины при 20 km/h
+        const windFactor = 1 + (wind / 20) * 0.5;
+        const evacAdj = (evac * windFactor).toFixed(2);
+
+        document.getElementById('res-iso').innerText = iso + " m";
+        document.getElementById('res-evac').innerText = evacAdj + " km";
+
+        // Обновить визуальный бар: отношение hot/evac
+        const hotEl = document.getElementById('hazard-hot');
+        const evacEl = document.getElementById('hazard-evac');
+        const evacMeters = evacAdj * 1000;
+        const ratio = Math.max(1, Math.min(5, evacMeters / (iso || 1))); // ограничим
+        hotEl.style.flex = 1;
+        evacEl.style.flex = ratio;
+    }
+
+    // --- FAVORITES (только в памяти) — NEW ---
+    function toggleFavorite(e) {
+        e.stopPropagation();
+        if (!currentItem) return;
+        currentItem._fav = !currentItem._fav;
+        const btn = document.getElementById('fav-btn');
+        if (currentItem._fav) {
+            btn.classList.add('active');
+            btn.textContent = '★';
+        } else {
+            btn.classList.remove('active');
+            btn.textContent = '☆';
+        }
+    }
+
+    // --- COMPARE LOGIC — NEW ---
+    function addToCompare() {
+        if (!currentItem) return;
+        const exists = compareList.find(i => i.un === currentItem.un);
+        if (!exists) {
+            compareList.push(currentItem);
+            updateCompareView();
+            alert("Lisatud võrdlusesse.");
+        } else {
+            alert("See aine on juba võrdluses.");
+        }
+    }
+
+    function updateCompareView() {
+        const empty = document.getElementById('compare-empty');
+        const wrap = document.getElementById('compare-table-wrap');
+        const body = document.getElementById('compare-table-body');
+        body.innerHTML = "";
+
+        if (compareList.length === 0) {
+            empty.style.display = 'block';
+            wrap.style.display = 'none';
+            return;
+        }
+
+        empty.style.display = 'none';
+        wrap.style.display = 'block';
+
+        compareList.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.n}</td>
+                <td>${item.un}</td>
+                <td>${item.k}</td>
+                <td>${item.c}</td>
+                <td>${item.rs} m</td>
+                <td>${item.edl} km</td>
+            `;
+            body.appendChild(tr);
         });
     }
-    
-    function filterChem() {
-        const q = document.getElementById('search').value.toLowerCase();
-        const f = chemDB.filter(i => i.n.toLowerCase().includes(q) || i.un.includes(q));
-        renderChem(f);
-    }
-    
-    // Init
-    renderChem(chemDB);
 
+    function clearCompare() {
+        compareList = [];
+        updateCompareView();
+    }
+
+    // --- TOOLS LOGIC — NEW ---
+    function convertLiters() {
+        const v = parseFloat(document.getElementById('l-input').value);
+        const out = document.getElementById('l-result');
+        if (isNaN(v)) {
+            out.textContent = '-';
+            return;
+        }
+        out.textContent = (v / 1000).toFixed(3);
+    }
+
+    function convertGallons() {
+        const v = parseFloat(document.getElementById('gal-input').value);
+        const out = document.getElementById('gal-result');
+        if (isNaN(v)) {
+            out.textContent = '-';
+            return;
+        }
+        out.textContent = (v / 3.785).toFixed(2);
+    }
+
+    function calcVolume() {
+        const l = parseFloat(document.getElementById('len-input').value);
+        const w = parseFloat(document.getElementById('wid-input').value);
+        const h = parseFloat(document.getElementById('hei-input').value);
+        const out = document.getElementById('vol-result');
+        if (isNaN(l) || isNaN(w) || isNaN(h)) {
+            out.textContent = '-';
+            return;
+        }
+        const m3 = l * w * h;
+        const liters = m3 * 1000;
+        out.textContent = m3.toFixed(2) + " m³ (" + liters.toFixed(0) + " L)";
+    }
+
+    // --- NAVIGATION BETWEEN SCREENS — NEW ---
+    function showScreen(name) {
+        document.getElementById('main-screen').classList.remove('active');
+        document.getElementById('compare-screen').classList.remove('active');
+        document.getElementById('tools-screen').classList.remove('active');
+
+        document.getElementById('nav-main').classList.remove('active');
+        document.getElementById('nav-compare').classList.remove('active');
+        document.getElementById('nav-tools').classList.remove('active');
+
+        if (name === 'main') {
+            document.getElementById('main-screen').classList.add('active');
+            document.getElementById('nav-main').classList.add('active');
+        } else if (name === 'compare') {
+            document.getElementById('compare-screen').classList.add('active');
+            document.getElementById('nav-compare').classList.add('active');
+            updateCompareView();
+        } else if (name === 'tools') {
+            document.getElementById('tools-screen').classList.add('active');
+            document.getElementById('nav-tools').classList.add('active');
+        }
+
+        // При смене вкладки закрываем details, чтобы не мешал
+        closeDetails();
+    }
+
+    // Init
+    renderList();
 </script>
 </body>
 </html>
