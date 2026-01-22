@@ -3,369 +3,2626 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CBRN Keemiaarvuti: ERG 2024</title>
+    <title>CBRN PRO</title>
     
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- React -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel Standalone -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <style>
-        :root {
-            --bg: #121212;
-            --panel: #1e1e1e;
-            --text: #e0e0e0;
-            --accent: #0a84ff;
-            --danger: #ff453a; /* Hot Zone Red */
-            --warn: #ff9f0a;   /* PAZ Orange */
-            --border: #333;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-
-        body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
-
-        /* LAYOUT */
-        #app-container { display: flex; flex-direction: column; height: 100vh; }
         
-        /* MAP LAYER */
-        #map { flex-grow: 1; z-index: 1; background: #222; }
-
-        /* UI OVERLAY (Tactical Interface) */
-        #ui-layer {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            background: rgba(30, 30, 30, 0.95);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid var(--accent);
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+            background: #09090b; /* Zinc-950 */
+            color: #ffffff;
+        }
+        
+        /* КАРТА НА ВЕСЬ ЭКРАН (z-index: 0) */
+        #map {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+        }
+        
+        /* GLASSMORPHISM - Боковая панель */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 80px;
+            width: 380px;
+            background: rgba(17, 24, 39, 0.85); /* Glassmorphism */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(249, 115, 22, 0.2); /* Orange-500 с прозрачностью */
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6);
             z-index: 1000;
-            padding-bottom: env(safe-area-inset-bottom);
-            transition: transform 0.3s ease;
-            max-height: 60vh;
-            overflow-y: auto;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
-        /* HEADER & SEARCH */
-        .top-bar {
-            position: absolute; top: 0; left: 0; width: 100%;
-            padding: 10px; box-sizing: border-box;
-            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
-            z-index: 1001; pointer-events: none;
-        }
-        .search-container { pointer-events: auto; display: flex; gap: 10px; }
-        input#search {
-            flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #444;
-            background: rgba(0,0,0,0.8); color: white; font-size: 16px;
-        }
-        button#btn-li-ion {
-            background: #ff3b30; color: white; border: none; border-radius: 8px;
-            font-weight: bold; padding: 0 15px; font-size: 14px;
-        }
-
-        /* CONTROLS */
-        .controls { padding: 15px; }
-        .row { display: flex; gap: 10px; margin-bottom: 12px; }
-        .col { flex: 1; }
-
-        label { font-size: 11px; text-transform: uppercase; color: #888; display: block; margin-bottom: 5px; }
         
-        /* SEGMENTED CONTROLS */
-        .seg-control { display: flex; background: #333; border-radius: 8px; padding: 2px; }
-        .seg-btn {
-            flex: 1; padding: 10px; text-align: center; font-size: 13px; font-weight: 600;
-            color: #888; border-radius: 6px; cursor: pointer; transition: 0.2s;
+        .sidebar.collapsed {
+            transform: translateX(-100%);
         }
-        .seg-btn.active { background: #555; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        .seg-btn.active.danger { background: var(--danger); }
-
-        /* WIND SLIDER */
-        input[type=range] { width: 100%; accent-color: var(--accent); }
-        .wind-val { float: right; color: var(--accent); font-weight: bold; }
-
-        /* INFO PANEL */
-        .info-panel {
-            background: #252525; padding: 15px; border-radius: 8px; margin-top: 10px;
-            border-left: 4px solid var(--accent);
+        
+        /* Хедер с Glassmorphism */
+        .app-header {
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 20px 24px;
+            border-bottom: 2px solid #F97316; /* Orange-500 */
+            display: flex;
+            align-items: center;
+            gap: 14px;
         }
-        .chem-title { font-size: 18px; font-weight: 800; margin: 0; }
-        .chem-un { font-family: monospace; color: var(--accent); font-size: 14px; }
-        .zone-data { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; }
-        .val-hot { color: var(--danger); font-weight: bold; }
-        .val-warm { color: var(--warn); font-weight: bold; }
-
-        /* CWA WARNING */
-        .cwa-alert {
-            background: #2e003e; border: 1px solid #d500f9; color: #fff;
-            padding: 10px; margin-bottom: 10px; border-radius: 6px;
-            font-weight: bold; text-align: center; display: none;
+        
+        .app-logo {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #F97316 0%, #DC2626 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
         }
-
+        
+        .app-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+        }
+        
+        .app-title-sub {
+            color: #F97316; /* Orange-500 */
+        }
+        
+        /* КАТЕГОРИИ УГРОЗ (CBRN) */
+        .threat-tabs {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .threat-tab {
+            background: rgba(30, 41, 59, 0.4); /* Slate-800 */
+            border: 2px solid transparent;
+            border-radius: 16px;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #9ca3af; /* Gray-400 */
+            font-weight: 700;
+            font-size: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .threat-tab::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .threat-tab:hover {
+            background: rgba(51, 65, 85, 0.6); /* Slate-700 */
+            border-color: rgba(249, 115, 22, 0.3);
+            transform: translateX(4px);
+        }
+        
+        .threat-tab:hover::before {
+            opacity: 1;
+        }
+        
+        .threat-tab.active {
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid #F97316; /* Orange-500 - ГРАДИЕНТНАЯ ОБВОДКА */
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            transform: translateX(4px);
+        }
+        
+        .threat-tab.active::before {
+            opacity: 1;
+        }
+        
+        .threat-icon {
+            font-size: 28px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: rgba(249, 115, 22, 0.1);
+            flex-shrink: 0;
+        }
+        
+        .threat-tab.active .threat-icon {
+            background: rgba(249, 115, 22, 0.2);
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+        
+        /* Контент панели */
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: #F97316 rgba(255, 255, 255, 0.05);
+        }
+        
+        .panel-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .panel-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 4px;
+        }
+        
+        .panel-content::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #F97316 0%, #DC2626 100%);
+            border-radius: 4px;
+        }
+        
+        .panel-content::-webkit-scrollbar-thumb:hover {
+            background: #F97316;
+        }
+        
+        /* Секции с Glassmorphism */
+        .section {
+            background: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+        
+        .section-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #9ca3af; /* Gray-400 */
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Инпуты и селекты - КРУПНЫЕ (Touch-friendly) */
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #9ca3af; /* Gray-400 */
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+        
+        .tactical-input, .tactical-select {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.8); /* Slate-900 */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .tactical-input:focus, .tactical-select:focus {
+            outline: none;
+            border-color: #F97316; /* Orange-500 */
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+            background: rgba(15, 23, 42, 0.95);
+        }
+        
+        .tactical-select {
+            cursor: pointer;
+        }
+        
+        /* Слайдеры - КРУПНЫЕ */
+        .slider-container {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .tactical-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            flex: 1;
+            height: 8px;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 4px;
+            outline: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .tactical-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #F97316 0%, #DC2626 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s;
+        }
+        
+        .tactical-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.7);
+        }
+        
+        .tactical-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #F97316 0%, #DC2626 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .slider-value {
+            min-width: 80px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            border-radius: 10px;
+            padding: 10px 14px;
+            text-align: center;
+            color: #F97316;
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Кнопки выбора - КРУПНЫЕ (Touch-friendly) */
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .option-button {
+            background: rgba(30, 41, 59, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px 12px;
+            color: #9ca3af; /* Gray-400 */
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            min-height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .option-button:hover {
+            background: rgba(51, 65, 85, 0.7);
+            border-color: rgba(249, 115, 22, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .option-button.active {
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%);
+            border-color: #F97316; /* Orange-500 */
+            color: #ffffff;
+            box-shadow: 0 4px 16px rgba(249, 115, 22, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        /* INFO CARDS - Результаты (плавающие карточки) */
+        .results-panel {
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+        
+        .result-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: 14px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s;
+        }
+        
+        .result-item:hover {
+            background: rgba(15, 23, 42, 0.9);
+            border-color: rgba(249, 115, 22, 0.3);
+            transform: translateX(4px);
+        }
+        
+        .result-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .result-icon.orange {
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.3) 0%, rgba(234, 88, 12, 0.3) 100%);
+            color: #F97316;
+            border: 2px solid rgba(249, 115, 22, 0.4);
+        }
+        
+        .result-icon.red {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.3) 0%, rgba(185, 28, 28, 0.3) 100%);
+            color: #DC2626;
+            border: 2px solid rgba(220, 38, 38, 0.4);
+        }
+        
+        .result-info {
+            flex: 1;
+        }
+        
+        .result-label {
+            font-size: 11px;
+            color: #9ca3af; /* Gray-400 */
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        
+        .result-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: #ffffff;
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            line-height: 1;
+        }
+        
+        /* BOTTOM NAVIGATION - Нижняя панель с Glassmorphism */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            z-index: 1001;
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.6);
+            padding: 0 20px;
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 12px 16px;
+            color: #6b7280; /* Gray-500 */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 12px;
+            position: relative;
+        }
+        
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #F97316 0%, #DC2626 100%);
+            border-radius: 2px 2px 0 0;
+            transition: width 0.3s;
+        }
+        
+        .nav-item:hover {
+            color: #9ca3af; /* Gray-400 */
+            background: rgba(249, 115, 22, 0.05);
+        }
+        
+        .nav-item.active {
+            color: #F97316; /* Orange-500 - АКТИВНЫЙ СВЕТИТСЯ ОРАНЖЕВЫМ */
+            background: rgba(249, 115, 22, 0.1);
+        }
+        
+        .nav-item.active::before {
+            width: 60%;
+        }
+        
+        .nav-icon {
+            font-size: 28px;
+            transition: transform 0.3s;
+        }
+        
+        .nav-item.active .nav-icon {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.6));
+        }
+        
+        .nav-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        
+        /* Кнопка сворачивания с Glassmorphism */
+        .toggle-sidebar {
+            position: fixed;
+            left: 390px;
+            top: 24px;
+            z-index: 1002;
+            background: rgba(17, 24, 39, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            cursor: pointer;
+            color: #F97316;
+            font-size: 22px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .toggle-sidebar.collapsed {
+            left: 24px;
+        }
+        
+        .toggle-sidebar:hover {
+            background: rgba(17, 24, 39, 0.95);
+            border-color: #F97316;
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+        }
+        
+        /* INFO CARDS - Плавающие карточки поверх карты (погода, результаты) */
+        .info-card {
+            position: fixed;
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 16px 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            z-index: 900;
+            transition: all 0.3s;
+        }
+        
+        .info-card:hover {
+            background: rgba(17, 24, 39, 0.95);
+            border-color: rgba(249, 115, 22, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+        }
+        
+        .info-card-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .info-card-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+        }
+        
+        .info-card-icon {
+            font-size: 24px;
+            margin-right: 8px;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                bottom: 80px;
+            }
+            
+            .toggle-sidebar {
+                left: auto;
+                right: 24px;
+            }
+            
+            .toggle-sidebar.collapsed {
+                left: auto;
+                right: 24px;
+            }
+            
+            .bottom-nav {
+                padding: 0 8px;
+            }
+            
+            .nav-item {
+                padding: 8px;
+            }
+            
+            .nav-icon {
+                font-size: 24px;
+            }
+            
+            .nav-label {
+                font-size: 10px;
+            }
+        }
+        
+        /* Анимация появления */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .section {
+            animation: fadeInUp 0.4s ease-out;
+        }
+        
+        /* ПЕРЕКЛЮЧАТЕЛИ (Toggle Switch) */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        
+        .toggle-container:hover {
+            background: rgba(30, 41, 59, 0.6);
+            border-color: rgba(249, 115, 22, 0.2);
+        }
+        
+        .toggle-container.disabled {
+            opacity: 0.5;
+        }
+        
+        .toggle-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .toggle-switch.active {
+            background: linear-gradient(135deg, #F97316 0%, #DC2626 100%);
+            border-color: #F97316;
+            box-shadow: 0 0 12px rgba(249, 115, 22, 0.5);
+        }
+        
+        .toggle-thumb {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: #ffffff;
+            border-radius: 50%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .toggle-switch.active .toggle-thumb {
+            transform: translateX(24px);
+        }
     </style>
 </head>
 <body>
+    <div id="root"></div>
 
-<div id="app-container">
-    
-    <div class="top-bar">
-        <div class="search-container">
-            <input type="text" id="search" placeholder="UN kood või Nimi (nt 1017, Kloor)..." onchange="findChem()">
-            <button id="btn-li-ion" onclick="activateLithiumMode()">🔋 Li-Ion</button>
-        </div>
-    </div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-    <div id="map"></div>
-
-    <div id="ui-layer">
-        <div class="controls">
-            
-            <div id="cwa-banner" class="cwa-alert">⚠️ RÜNDEMÜRK (CWA) - TERRORIOHT</div>
-
-            <div class="info-panel" id="info-box" style="display:none">
-                <div class="chem-un" id="disp-un">UN ----</div>
-                <h2 class="chem-title" id="disp-name">Vali aine</h2>
-                <div class="zone-data">
-                    <span>Eralda (Hot): <span id="val-iso" class="val-hot">-- m</span></span>
-                    <span>Kaitse (PAZ): <span id="val-paz" class="val-warm">-- km</span></span>
-                </div>
-            </div>
-
-            <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
-
-            <div class="row">
-                <div class="col">
-                    <label>Lekke suurus</label>
-                    <div class="seg-control">
-                        <div class="seg-btn active" id="btn-small" onclick="setSpill('small')">VÄIKE<br><span style="font-size:9px">< 208L</span></div>
-                        <div class="seg-btn" id="btn-large" onclick="setSpill('large')">SUUR<br><span style="font-size:9px">> 208L</span></div>
-                    </div>
-                </div>
-                <div class="col">
-                    <label>Aeg / Ilm</label>
-                    <div class="seg-control">
-                        <div class="seg-btn active" id="btn-day" onclick="setTime('day')">PÄEV</div>
-                        <div class="seg-btn" id="btn-night" onclick="setTime('night')">ÖÖ</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col">
-                    <label>Tuule suund (Kuhu puhub): <span id="wind-disp" class="wind-val">0° (N)</span></label>
-                    <input type="range" id="wind-slider" min="0" max="360" value="0" oninput="updateWind(this.value)">
-                    <div style="font-size:10px; color:#666; text-align:center; margin-top:5px">Pööra liugurit vastavalt tuulele</div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-
-<script>
-    // --- 1. DATA SOVEREIGNTY (JSON DATABASE) ---
-    // Expanded structure to support ERG 2024 logic
-    const db = [
-        {
-            un: "1005", name: "AMMONIAAK (Veevaba)", type: "tic",
-            iso_s: 30, paz_s_d: 0.1, paz_s_n: 0.2,
-            iso_l: 150, paz_l_d: 0.8, paz_l_n: 2.3
-        },
-        {
-            un: "1017", name: "KLOOR", type: "tic",
-            iso_s: 60, paz_s_d: 0.2, paz_s_n: 0.8,
-            iso_l: 270, paz_l_d: 1.6, paz_l_n: 6.8
-        },
-        {
-            un: "1076", name: "FOSGEEN", type: "tic",
-            iso_s: 100, paz_s_d: 0.8, paz_s_n: 2.7,
-            iso_l: 600, paz_l_d: 5.3, paz_l_n: 11.0
-        },
-        {
-            un: "2810", name: "SARIIN (GB)", type: "cwa", // CWA triggers special UI
-            iso_s: 60, paz_s_d: 0.4, paz_s_n: 1.1,
-            iso_l: 300, paz_l_d: 2.1, paz_l_n: 8.5
-        },
-        {
-            un: "2810", name: "VX AINE", type: "cwa",
-            iso_s: 30, paz_s_d: 0.1, paz_s_n: 0.2,
-            iso_l: 60, paz_l_d: 0.2, paz_l_n: 0.2
-        },
-        {
-            un: "1051", name: "VESINIKTSÜANIID", type: "tic",
-            iso_s: 30, paz_s_d: 0.1, paz_s_n: 0.2,
-            iso_l: 100, paz_l_d: 0.5, paz_l_n: 1.7
-        }
-    ];
-
-    // --- 2. APP STATE ---
-    let map, hotLayer, pazLayer;
-    let currentChem = null;
-    let state = {
-        spill: 'small', // small, large
-        time: 'day',    // day, night
-        wind: 0,        // degrees (0-360)
-        center: [59.437, 24.7535] // Default Tallinn
-    };
-
-    // --- 3. INITIALIZATION ---
-    function init() {
-        // Init Leaflet Map
-        map = L.map('map').setView(state.center, 13);
-        
-        // Dark Mode Tiles (CartoDB DarkMatter)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 19
-        }).addTo(map);
-
-        // Get Real GPS
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(pos => {
-                state.center = [pos.coords.latitude, pos.coords.longitude];
-                map.setView(state.center, 15);
-                L.marker(state.center).addTo(map).bindPopup("Sinu asukoht").openPopup();
-            });
-        }
-    }
-
-    // --- 4. GEOSPATIAL ALGORITHMIC RENDERING ("Keyhole" Logic) ---
-    function drawZones() {
-        if (!currentChem) return;
-
-        // Clear old layers
-        if (hotLayer) map.removeLayer(hotLayer);
-        if (pazLayer) map.removeLayer(pazLayer);
-
-        // 1. Determine Distances based on Matrix (Small/Large + Day/Night)
-        let r_iso = (state.spill === 'small') ? currentChem.iso_s : currentChem.iso_l; // Meters
-        let d_paz_km = 0;
-
-        if (state.spill === 'small') {
-            d_paz_km = (state.time === 'day') ? currentChem.paz_s_d : currentChem.paz_s_n;
-        } else {
-            d_paz_km = (state.time === 'day') ? currentChem.paz_l_d : currentChem.paz_l_n;
-        }
-        let d_paz = d_paz_km * 1000; // Convert to meters
-
-        // Update UI Text
-        document.getElementById('val-iso').innerText = r_iso + " m";
-        document.getElementById('val-paz').innerText = d_paz_km + " km";
-
-        // 2. Draw HOT ZONE (Circle) - Red
-        hotLayer = L.circle(state.center, {
-            color: 'var(--danger)',
-            fillColor: '#f03',
-            fillOpacity: 0.4,
-            radius: r_iso
-        }).addTo(map);
-
-        // 3. Draw PAZ (Protective Action Zone) - "Keyhole" Cone using Turf.js
-        // The PAZ starts at the spill and extends downwind.
-        // We create a polygon: Center -> Tangent Left -> Downwind Left -> Downwind Right -> Tangent Right -> Center
-        
-        const centerPt = turf.point([state.center[1], state.center[0]]); // GeoJSON is Lon, Lat
-        const windBearing = parseInt(state.wind);
-        const coneWidth = 45; // Degrees spread (Standard ERG approach)
-
-        // Calculate polygon points
-        // NOTE: Turf uses degrees from North (0 is North, 90 is East)
-        const p1 = turf.destination(centerPt, r_iso/1000, windBearing - 90); // Tangent approx
-        const p2 = turf.destination(centerPt, d_paz_km, windBearing - coneWidth/2); // Far Left
-        const p3 = turf.destination(centerPt, d_paz_km, windBearing + coneWidth/2); // Far Right
-        const p4 = turf.destination(centerPt, r_iso/1000, windBearing + 90); // Tangent approx
-
-        // In a real precise app, we would calculate exact tangents to the circle. 
-        // For ERG visualization, a cone originating from center overlaid by the circle is standard.
-        
-        const polyCoords = [
-            [state.center[1], state.center[0]], // Start at center
-            p2.geometry.coordinates,
-            p3.geometry.coordinates,
-            [state.center[1], state.center[0]]  // Close loop
+        // Isotoopide andmebaas (tööstuslikud allikad)
+        // radiationType: 'gamma', 'beta', 'alpha', 'mixed' - влияет на расчет зон!
+        const isotopeDatabase = [
+            { 
+                name: "Co-60 (Kobolt-60)", 
+                halfLife: "5.27 aastat", 
+                dangerLevel: "Kõrge",
+                description: "Gammadefektoskoopia, meditsiin",
+                commonUse: "Tööstuslik radiograafia",
+                radiationType: "gamma", // Inverse square law работает!
+                maxRange: 10000 // метров (неограниченный для gamma)
+            },
+            { 
+                name: "Cs-137 (Tseesium-137)", 
+                halfLife: "30.17 aastat", 
+                dangerLevel: "Kõrge",
+                description: "Gammakiirgus, kontrollimisseadmed",
+                commonUse: "Tööstuslikud mõõteriistad",
+                radiationType: "gamma",
+                maxRange: 10000
+            },
+            { 
+                name: "Ir-192 (Iriidium-192)", 
+                halfLife: "73.83 päeva", 
+                dangerLevel: "Keskmine",
+                description: "Gammadefektoskoopia",
+                commonUse: "Keevituste kontroll",
+                radiationType: "gamma",
+                maxRange: 10000
+            },
+            { 
+                name: "Am-241 (Ameeritsium-241)", 
+                halfLife: "432.2 aastat", 
+                dangerLevel: "Keskmine",
+                description: "Alfa-kiirgus, suitsuandurid",
+                commonUse: "Tuleohutuse seadmed",
+                radiationType: "alpha", // Короткий пробег!
+                maxRange: 0.05 // метров (~5 см в воздухе)
+            },
+            { 
+                name: "Sr-90 (Strontsium-90)", 
+                halfLife: "28.79 aastat", 
+                dangerLevel: "Kõrge",
+                description: "Beeta-kiirgus",
+                commonUse: "Tööstuslikud allikad",
+                radiationType: "beta", // Ограниченный пробег
+                maxRange: 10 // метров (~10 м в воздухе)
+            },
+            { 
+                name: "RDD (Määramatu segu)", 
+                halfLife: "N/A", 
+                dangerLevel: "Kriitiline",
+                description: "Määramatu segu radionukliididest",
+                commonUse: "Terroristlik rünnak",
+                radiationType: "mixed", // Смешанное - используем plume model!
+                maxRange: 1000 // зависит от ветра
+            }
         ];
 
-        // Convert Turf polygon to Leaflet
-        const leafCoords = polyCoords.map(c => [c[1], c[0]]); // Swap back to Lat, Lon
+        // Keemiliste ainete andmebaas (50 levinumat ainet)
+        // density - плотность в кг/л (для жидкостей) или кг/м³ для газов (при нормальных условиях)
+        // type: 'toxic' (AEGL) или 'flammable' (LEL/UEL)
+        // lel/uel - Lower/Upper Explosive Limit (ppm)
+        // heatOfCombustion - теплота сгорания (кДж/кг)
+        // vaporPressure - давление паров при 20°C (mmHg) - критично для испарения!
+        const chemicalDatabase = [
+            { name: "Kloor", cas: "7782-50-5", appearance: "Roheline-kollane gaas", odor: "Terav, mürgine", type: "toxic", idlh: 10, aegl1: 0.5, aegl2: 2.5, aegl3: 20, molWeight: 70.9, boilingPoint: -34, density: 0.0032, lel: null, uel: null, heatOfCombustion: 0, vaporPressure: 6800 },
+            { name: "Ammoniaak", cas: "7664-41-7", appearance: "Lõhnatu gaas", odor: "Terav, söövitav", type: "toxic", idlh: 300, aegl1: 30, aegl2: 160, aegl3: 1100, molWeight: 17.03, boilingPoint: -33.3, density: 0.73, lel: 150000, uel: 280000, heatOfCombustion: 18600, vaporPressure: 8500 },
+            { name: "Propaan", cas: "74-98-6", appearance: "Lõhnatu gaas", odor: "Lõhnatu (lisatud odorisant)", type: "flammable", idlh: 2100, aegl1: null, aegl2: null, aegl3: null, molWeight: 44.1, boilingPoint: -42.1, density: 0.51, lel: 21000, uel: 95000, heatOfCombustion: 46350, vaporPressure: 7500 },
+            { name: "Metaan", cas: "74-82-8", appearance: "Lõhnatu gaas", odor: "Lõhnatu", type: "flammable", idlh: 1000, aegl1: null, aegl2: null, aegl3: null, molWeight: 16.04, boilingPoint: -161.5, density: 0.0007, lel: 50000, uel: 150000, heatOfCombustion: 50000, vaporPressure: 10000 },
+            { name: "Eteen", cas: "74-85-1", appearance: "Lõhnatu gaas", odor: "Lõhnatu", type: "flammable", idlh: 800, aegl1: null, aegl2: null, aegl3: null, molWeight: 28.05, boilingPoint: -103.7, density: 0.57, lel: 27000, uel: 360000, heatOfCombustion: 47200, vaporPressure: 9000 },
+            { name: "Vesinik", cas: "1333-74-0", appearance: "Lõhnatu gaas", odor: "Lõhnatu", type: "flammable", idlh: 4000, aegl1: null, aegl2: null, aegl3: null, molWeight: 2.016, boilingPoint: -252.9, density: 0.071, lel: 40000, uel: 750000, heatOfCombustion: 120000, vaporPressure: 10000 },
+            { name: "Vesinikkloriid", cas: "7647-01-0", appearance: "Lõhnatu gaas", odor: "Terav, söövitav", type: "toxic", idlh: 50, aegl1: 2.7, aegl2: 50, aegl3: 150, molWeight: 36.46, boilingPoint: -85, density: 1.19, lel: null, uel: null, heatOfCombustion: 0, vaporPressure: 8000 },
+            { name: "Vesinikfluoriid", cas: "7664-39-3", appearance: "Lõhnatu gaas", odor: "Terav", type: "toxic", idlh: 30, aegl1: 2, aegl2: 20, aegl3: 50, molWeight: 20.01, boilingPoint: 19.5, density: 0.99, lel: null, uel: null, heatOfCombustion: 0, vaporPressure: 760 },
+            { name: "Süsinikmonooksiid", cas: "630-08-0", appearance: "Lõhnatu gaas", odor: "Lõhnatu", type: "toxic", idlh: 1200, aegl1: 200, aegl2: 400, aegl3: 800, molWeight: 28.01, boilingPoint: -191.5, density: 0.79, lel: 125000, uel: 740000, heatOfCombustion: 10100, vaporPressure: 10000 },
+            { name: "Süsinikdioksiid", cas: "124-38-9", appearance: "Lõhnatu gaas", odor: "Lõhnatu", type: "toxic", idlh: 40000, aegl1: 17000, aegl2: 30000, aegl3: 40000, molWeight: 44.01, boilingPoint: -78.5, density: 0.77, lel: null, uel: null, heatOfCombustion: 0, vaporPressure: 10000 },
+            { name: "Lahustunud kloor", cas: "7782-50-5", appearance: "Roheline-kollane gaas", odor: "Terav, mürgine", type: "toxic", idlh: 10, aegl1: 0.5, aegl2: 2.5, aegl3: 20, molWeight: 70.9, boilingPoint: -34, density: 1.47, lel: null, uel: null, heatOfCombustion: 0, vaporPressure: 6800 },
+            { name: "Fosgeen", cas: "75-44-5", appearance: "Lõhnatu gaas", odor: "Lõhnatu (mürgine)", type: "toxic", idlh: 2, aegl1: 0.2, aegl2: 0.6, aegl3: 1.8, molWeight: 98.92, boilingPoint: 8.2, density: 1.37, lel: null, uel: null, heatOfCombustion: 0, vaporPressure: 1200 },
+            { name: "Süsiniktetrakloriid", cas: "56-23-5", appearance: "Lõhnatu vedelik", odor: "Magus", type: "toxic", idlh: 200, aegl1: 2.5, aegl2: 8, aegl3: 25, molWeight: 153.82, boilingPoint: 76.7, density: 1.59, lel: null, uel: null, heatOfCombustion: 0, vaporPressure: 91 },
+            { name: "Benseen", cas: "71-43-2", appearance: "Lõhnatu vedelik", odor: "Magus, aromaatne", idlh: 500, aegl1: 3.7, aegl2: 9.3, aegl3: 19, molWeight: 78.11, boilingPoint: 80.1, density: 0.88 },
+            { name: "Tolueen", cas: "108-88-3", appearance: "Lõhnatu vedelik", odor: "Magus, aromaatne", idlh: 500, aegl1: 200, aegl2: 500, aegl3: 1000, molWeight: 92.14, boilingPoint: 110.6, density: 0.87 },
+            { name: "Ksileen", cas: "1330-20-7", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 900, aegl1: 200, aegl2: 1000, aegl3: 2000, molWeight: 106.17, boilingPoint: 139, density: 0.86 },
+            { name: "Etanool", cas: "64-17-5", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 3300, aegl1: 1000, aegl2: 5000, aegl3: 10000, molWeight: 46.07, boilingPoint: 78.4, density: 0.79 },
+            { name: "Metanool", cas: "67-56-1", appearance: "Lõhnatu vedelik", odor: "Lõhnatu", idlh: 6000, aegl1: 200, aegl2: 1000, aegl3: 2000, molWeight: 32.04, boilingPoint: 64.7, density: 0.79 },
+            { name: "Atsetoon", cas: "67-64-1", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 2500, aegl1: 500, aegl2: 2000, aegl3: 5000, molWeight: 58.08, boilingPoint: 56.1, density: 0.79 },
+            { name: "Eteenoksiid", cas: "75-21-8", appearance: "Lõhnatu gaas", odor: "Magus", idlh: 800, aegl1: 0.5, aegl2: 2.5, aegl3: 10, molWeight: 44.05, boilingPoint: 10.7, density: 0.88 },
+            { name: "Formaldehüüd", cas: "50-00-0", appearance: "Lõhnatu gaas", odor: "Terav, söövitav", idlh: 20, aegl1: 0.3, aegl2: 1, aegl3: 3, molWeight: 30.03, boilingPoint: -19, density: 0.82 },
+            { name: "Atsetüleen", cas: "74-86-2", appearance: "Lõhnatu gaas", odor: "Lõhnatu", idlh: 5000, aegl1: 2600, aegl2: 13000, aegl3: 26000, molWeight: 26.04, boilingPoint: -84, density: 0.62 },
+            { name: "Butaan", cas: "106-97-8", appearance: "Lõhnatu gaas", odor: "Lõhnatu (lisatud odorisant)", type: "flammable", idlh: 1600, aegl1: null, aegl2: null, aegl3: null, molWeight: 58.12, boilingPoint: -0.5, density: 0.58, lel: 18000, uel: 85000, heatOfCombustion: 45720 },
+            { name: "Pentaani", cas: "109-66-0", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 1500, aegl1: 2000, aegl2: 5000, aegl3: 10000, molWeight: 72.15, boilingPoint: 36.1, density: 0.63 },
+            { name: "Heksaan", cas: "110-54-3", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 1100, aegl1: 2000, aegl2: 5000, aegl3: 10000, molWeight: 86.18, boilingPoint: 68.7, density: 0.66 },
+            { name: "Tsüklopentaani", cas: "287-92-3", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 3000, aegl1: 2000, aegl2: 5000, aegl3: 10000, molWeight: 70.13, boilingPoint: 49.3, density: 0.75 },
+            { name: "Diisopropüülketoon", cas: "108-83-8", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 2000, aegl1: 200, aegl2: 1000, aegl3: 2000, molWeight: 100.16, boilingPoint: 124, density: 0.80 },
+            { name: "Metüülisobutüülketoon", cas: "108-10-1", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 500, aegl1: 50, aegl2: 200, aegl3: 500, molWeight: 100.16, boilingPoint: 116.5, density: 0.80 },
+            { name: "Eetilatsetaat", cas: "141-78-6", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 2000, aegl1: 200, aegl2: 1000, aegl3: 2000, molWeight: 88.11, boilingPoint: 77.1, density: 0.90 },
+            { name: "Eetileeter", cas: "60-29-7", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 1900, aegl1: 200, aegl2: 1000, aegl3: 2000, molWeight: 74.12, boilingPoint: 34.6, density: 0.71 },
+            { name: "Tetraetüülplii", cas: "78-00-2", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 40, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 323.44, boilingPoint: 200, density: 1.65 },
+            { name: "Metüülmerkuri", cas: "22967-92-6", appearance: "Lõhnatu vedelik", odor: "Lõhnatu", idlh: 2, aegl1: 0.01, aegl2: 0.03, aegl3: 0.1, molWeight: 215.63, boilingPoint: 95, density: 3.07 },
+            { name: "Arseen", cas: "7440-38-2", appearance: "Hall metall", odor: "Lõhnatu", idlh: 5, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 74.92, boilingPoint: 614, density: 5.73 },
+            { name: "Kadmium", cas: "7440-43-9", appearance: "Hall metall", odor: "Lõhnatu", idlh: 9, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 112.41, boilingPoint: 767, density: 8.69 },
+            { name: "Kroom", cas: "7440-47-3", appearance: "Hall metall", odor: "Lõhnatu", idlh: 15, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 52, boilingPoint: 2672, density: 7.19 },
+            { name: "Nikkel", cas: "7440-02-0", appearance: "Hall metall", odor: "Lõhnatu", idlh: 10, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 58.69, boilingPoint: 2732, density: 8.91 },
+            { name: "Plii", cas: "7439-92-1", appearance: "Hall metall", odor: "Lõhnatu", idlh: 100, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 207.2, boilingPoint: 1749, density: 11.34 },
+            { name: "Tsink", cas: "7440-66-6", appearance: "Hall metall", odor: "Lõhnatu", idlh: 500, aegl1: 1, aegl2: 3, aegl3: 10, molWeight: 65.38, boilingPoint: 907, density: 7.14 },
+            { name: "Vask", cas: "7440-50-8", appearance: "Punakas metall", odor: "Lõhnatu", idlh: 100, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 63.55, boilingPoint: 2562, density: 8.96 },
+            { name: "Elavhõbe", cas: "7439-97-6", appearance: "Hõbedane vedelik", odor: "Lõhnatu", idlh: 10, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 200.59, boilingPoint: 356.7, density: 13.53 },
+            { name: "Süsiniktetrakloriid", cas: "56-23-5", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 200, aegl1: 2.5, aegl2: 8, aegl3: 25, molWeight: 153.82, boilingPoint: 76.7, density: 1.59 },
+            { name: "Trichloroetüleen", cas: "79-01-6", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 1000, aegl1: 10, aegl2: 50, aegl3: 200, molWeight: 131.39, boilingPoint: 87.2, density: 1.46 },
+            { name: "Perkloroetüleen", cas: "127-18-4", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 150, aegl1: 10, aegl2: 50, aegl3: 200, molWeight: 165.83, boilingPoint: 121.1, density: 1.62 },
+            { name: "1,1,1-Trichloroetaan", cas: "71-55-6", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 1000, aegl1: 200, aegl2: 1000, aegl3: 2000, molWeight: 133.4, boilingPoint: 74.1, density: 1.34 },
+            { name: "Metüleenkloriid", cas: "75-09-2", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 2300, aegl1: 200, aegl2: 1000, aegl3: 2000, molWeight: 97.94, boilingPoint: 39.8, density: 1.33 },
+            { name: "Kloroform", cas: "67-66-3", appearance: "Lõhnatu vedelik", odor: "Magus", idlh: 500, aegl1: 10, aegl2: 50, aegl3: 200, molWeight: 121.38, boilingPoint: 61.2, density: 1.48 },
+            { name: "Broom", cas: "7726-95-6", appearance: "Pruun vedelik", odor: "Terav, mürgine", idlh: 3, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 159.8, boilingPoint: 58.8, density: 3.12 },
+            { name: "Jood", cas: "7553-56-2", appearance: "Lilla tahke aine", odor: "Terav", idlh: 2, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 127.9, boilingPoint: 184.4, density: 4.93 },
+            { name: "Fluor", cas: "7782-41-4", appearance: "Roheline-kollane gaas", odor: "Terav, mürgine", idlh: 25, aegl1: 0.5, aegl2: 2.5, aegl3: 10, molWeight: 37.99, boilingPoint: -188.1, density: 0.0017 },
+            { name: "Vääveldioksiid", cas: "7446-09-5", appearance: "Lõhnatu gaas", odor: "Terav, söövitav", idlh: 100, aegl1: 0.2, aegl2: 0.75, aegl3: 3, molWeight: 64.06, boilingPoint: -10, density: 1.43 },
+            { name: "Vääveltrioksiid", cas: "7446-11-9", appearance: "Lõhnatu gaas", odor: "Terav, söövitav", idlh: 30, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 80.06, boilingPoint: 44.8, density: 1.92 },
+            { name: "Lämmastikdioksiid", cas: "10102-44-0", appearance: "Pruun gaas", odor: "Terav, söövitav", idlh: 20, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 46.01, boilingPoint: 21.2, density: 1.45 },
+            { name: "Lämmastikoksiid", cas: "10102-43-9", appearance: "Lõhnatu gaas", odor: "Lõhnatu", idlh: 25, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 44.01, boilingPoint: -151.8, density: 1.34 },
+            { name: "Osoon", cas: "10028-15-6", appearance: "Sinine gaas", odor: "Terav", idlh: 5, aegl1: 0.1, aegl2: 0.3, aegl3: 1, molWeight: 48, boilingPoint: -111.9, density: 2.14 },
+            { name: "Peroksiid", cas: "7722-84-1", appearance: "Lõhnatu vedelik", odor: "Lõhnatu", idlh: 75, aegl1: 0.5, aegl2: 2.5, aegl3: 10, molWeight: 34.01, boilingPoint: 150.2, density: 1.45 }
+        ];
 
-        pazLayer = L.polygon(leafCoords, {
-            color: 'var(--warn)',
-            fillColor: '#ff9f0a',
-            fillOpacity: 0.3,
-            weight: 2
-        }).addTo(map);
-
-        // Fit bounds to see the whole danger area
-        const group = new L.featureGroup([hotLayer, pazLayer]);
-        map.fitBounds(group.getBounds(), {padding: [50, 50]});
-    }
-
-    // --- 5. LOGIC & UI HANDLERS ---
-    
-    function findChem() {
-        const query = document.getElementById('search').value.toLowerCase();
-        const found = db.find(i => i.un.includes(query) || i.name.toLowerCase().includes(query));
-
-        if (found) {
-            currentChem = found;
-            document.getElementById('info-box').style.display = 'block';
-            document.getElementById('disp-name').innerText = found.name;
-            document.getElementById('disp-un').innerText = "UN " + found.un;
-
-            // CWA Check (Section 2.2)
-            const cwaBanner = document.getElementById('cwa-banner');
-            if (found.type === 'cwa') {
-                cwaBanner.style.display = 'block';
-                document.getElementById('info-box').style.borderColor = '#d500f9'; // Purple border
-            } else {
-                cwaBanner.style.display = 'none';
-                document.getElementById('info-box').style.borderColor = 'var(--accent)';
-            }
-
-            drawZones();
-        }
-    }
-
-    function setSpill(val) {
-        state.spill = val;
-        toggleBtns('btn-small', 'btn-large', val);
-        drawZones();
-    }
-
-    function setTime(val) {
-        state.time = val;
-        toggleBtns('btn-day', 'btn-night', val);
-        drawZones();
-    }
-
-    function updateWind(val) {
-        state.wind = val;
-        // Direction text logic
-        let dirTxt = "N";
-        if (val > 22 && val <= 67) dirTxt = "NE";
-        if (val > 67 && val <= 112) dirTxt = "E";
-        if (val > 112 && val <= 157) dirTxt = "SE";
-        if (val > 157 && val <= 202) dirTxt = "S";
-        if (val > 202 && val <= 247) dirTxt = "SW";
-        if (val > 247 && val <= 292) dirTxt = "W";
-        if (val > 292 && val <= 337) dirTxt = "NW";
+        // Matemaatilised funktsioonid
+        const toRad = (v) => (v * Math.PI) / 180;
+        const toDeg = (v) => (v * 180) / Math.PI;
         
-        document.getElementById('wind-disp').innerText = `${val}° (${dirTxt})`;
-        drawZones();
-    }
+        // Arvuta sihtpunkt kaugusel ja suunal
+        const getDestination = (lat, lng, distKm, bearing) => {
+            // Kontrolli sisendväärtusi
+            if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(distKm) || !Number.isFinite(bearing)) {
+                return null;
+            }
+            if (distKm < 0 || distKm > 10000) {
+                return null;
+            }
+            
+            try {
+                const R = 6371; // Maa raadius km
+                const brng = toRad(bearing);
+                const lat1 = toRad(lat);
+                const lon1 = toRad(lng);
+                const lat2 = Math.asin(Math.sin(lat1) * Math.cos(distKm/R) + 
+                                      Math.cos(lat1) * Math.sin(distKm/R) * Math.cos(brng));
+                const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(distKm/R) * Math.cos(lat1), 
+                                              Math.cos(distKm/R) - Math.sin(lat1) * Math.sin(lat2));
+                
+                const result = [toDeg(lat2), toDeg(lon2)];
+                
+                // Kontrolli tulemusi
+                if (!Number.isFinite(result[0]) || !Number.isFinite(result[1])) {
+                    return null;
+                }
+                if (Math.abs(result[0]) > 90 || Math.abs(result[1]) > 180) {
+                    return null;
+                }
+                
+                return result;
+            } catch (e) {
+                console.error('Error in getDestination:', e);
+                return null;
+            }
+        };
 
-    function toggleBtns(id1, id2, val) {
-        document.getElementById(id1).classList.remove('active');
-        document.getElementById(id2).classList.remove('active');
-        if (val === 'small' || val === 'day') document.getElementById(id1).classList.add('active');
-        else document.getElementById(id2).classList.add('active');
-    }
+        // Loo pilve polügoon (ALOHA-põhine)
+        function createPlumePolygon(center, lengthKm, windDir, stability) {
+            // Kontrolli sisendväärtusi
+            if (!center || !Number.isFinite(center.lat) || !Number.isFinite(center.lng)) {
+                return null;
+            }
+            if (!Number.isFinite(lengthKm) || lengthKm <= 0 || lengthKm > 1000) {
+                return null;
+            }
+            if (!Number.isFinite(windDir)) {
+                windDir = 0;
+            }
+            
+            const left = [], right = [];
+            const steps = 50;
+            
+            // Pilve laius sõltub stabiilsusest
+            const stabWidth = { 
+                inversion: 0.15,   // Öö (stabiilne)
+                neutral: 0.3,      // Pilves
+                convection: 0.6     // Päev (ebastabiilne)
+            };
+            const wRatio = stabWidth[stability] || 0.3;
 
-    // Guide 147 (Li-Ion)
-    function activateLithiumMode() {
-        alert("LITHIUM-ION REŽIIM (Guide 147):\n1. Vesi: Kasuta suures koguses jahutamiseks.\n2. Oht: Taassüttimine võimalik 24h jooksul.\n3. Eralda: Vähemalt 15m teistest objektidest.");
-    }
+            try {
+                for (let i = 0; i <= steps; i++) {
+                    const d = (lengthKm / steps) * i;
+                    if (d === 0 || !Number.isFinite(d)) {
+                        right.push([center.lat, center.lng]);
+                        left.push([center.lat, center.lng]);
+                        continue;
+                    }
+                    
+                    // Pilve laius suureneb kaugusega
+                    let halfW = lengthKm * wRatio * Math.pow(d / lengthKm, 0.7) * Math.pow(1 - d / lengthKm, 0.3);
+                    if (!Number.isFinite(halfW)) halfW = 0;
+                    
+                    const devAngle = toDeg(Math.atan2(halfW, d));
+                    if (!Number.isFinite(devAngle)) continue;
+                    
+                    const hyp = Math.sqrt(d*d + halfW*halfW);
+                    if (!Number.isFinite(hyp)) continue;
+                    
+                    const rightPoint = getDestination(center.lat, center.lng, hyp, windDir + devAngle);
+                    const leftPoint = getDestination(center.lat, center.lng, hyp, windDir - devAngle);
+                    
+                    if (rightPoint && Number.isFinite(rightPoint[0]) && Number.isFinite(rightPoint[1])) {
+                        right.push(rightPoint);
+                    }
+                    if (leftPoint && Number.isFinite(leftPoint[0]) && Number.isFinite(leftPoint[1])) {
+                        left.push(leftPoint);
+                    }
+                }
+                
+                if (right.length < 3 || left.length < 3) {
+                    return null;
+                }
+                
+                return [...right, ...left.reverse()];
+            } catch (e) {
+                console.error('Error creating plume polygon:', e);
+                return null;
+            }
+        }
 
-    // Start
-    init();
+        // === SOURCE TERM MODEL (физическая модель выброса) ===
+        // Поддерживает два режима: CONTAINER и PUDDLE
+        function calculateSourceTerm(chemical, sourceMode, containerVolume, puddleArea, ambientTemperature, windSpeed, customPoolArea = null, continuousLeak = false) {
+            // Проверка входных данных
+            if (!chemical || !Number.isFinite(chemical.density) || chemical.density <= 0) {
+                return { rate: 0, scenario: 'unknown', warning: '', totalMass: 0, poolArea: 0, duration: 0 };
+            }
+            
+            const T_amb = Number.isFinite(ambientTemperature) ? ambientTemperature : 20;
+            const T_boil = Number.isFinite(chemical.boilingPoint) ? chemical.boilingPoint : -273;
+            
+            // === РЕЖИМ 1: CONTAINER (Емкость/Цистерна) ===
+            if (sourceMode === 'container') {
+                // ШАГ А: Рассчитываем массу вещества
+                const totalMass = containerVolume * chemical.density; // кг
+                
+                // ШАГ Б: Проверяем агрегатное состояние
+                let rate = 0; // kg/min
+                let scenario = 'unknown';
+                let warning = '';
+                let calculatedPoolArea = 0;
+                let duration = 0; // минуты (сколько будет длиться выброс)
+                
+                if (T_amb > T_boil) {
+                    // СЦЕНАРИЙ: ГАЗ/КИПЕНИЕ (Flash Boiling)
+                    scenario = 'flash';
+                    
+                    if (continuousLeak) {
+                        // Струйная утечка: 10% объема в минуту
+                        rate = totalMass * 0.1; // kg/min
+                        duration = 10; // минут до полного опустошения
+                        warning = `⚠️ CONTINUOUS LEAK (Gas Release)<br>Струйная утечка: ${rate.toFixed(1)} kg/min<br>Время до опустошения: ${duration} минут`;
+                    } else {
+                        // Мгновенный выброс: всё за 10 минут
+                        rate = totalMass / 10; // kg/min
+                        duration = 10;
+                        warning = `⚠️ INSTANT RELEASE (Flash Boiling)<br>Вещество мгновенно закипает при ${T_amb}°C!<br>Температура кипения: ${T_boil}°C`;
+                    }
+                    
+                } else {
+                    // СЦЕНАРИЙ: ИСПАРЕНИЕ ЛУЖИ (Pool Evaporation)
+                    scenario = 'pool';
+                    
+                    // 1. Рассчитываем площадь лужи
+                    let poolArea;
+                    if (customPoolArea && Number.isFinite(customPoolArea) && customPoolArea > 0) {
+                        poolArea = customPoolArea;
+                    } else {
+                        const volumeM3 = containerVolume / 1000; // L → m³
+                        const poolDepth = 0.01; // m
+                        poolArea = volumeM3 / poolDepth; // m²
+                        
+                        // Для струйной утечки ограничиваем площадь
+                        if (continuousLeak) {
+                            poolArea = Math.min(poolArea, 100); // макс. 100 м² для мелких утечек
+                        }
+                    }
+                    calculatedPoolArea = poolArea;
+                    
+                    // 2. Фактор испарения
+                    const tempDiff = T_amb - T_boil;
+                    const evaporationFactor = Math.pow(2, tempDiff / 20);
+                    
+                    // 3. Фактор ветра
+                    const windFactor = 1 + (Number.isFinite(windSpeed) && windSpeed > 0 ? windSpeed / 10 : 0);
+                    
+                    // 4. Скорость испарения
+                    const baseEvapRate = 0.001; // kg/(m²·min)
+                    rate = poolArea * baseEvapRate * evaporationFactor * windFactor;
+                    
+                    // Ограничиваем максимальную скорость
+                    if (continuousLeak) {
+                        // Для струйной утечки: баланс между притоком (10%/мин) и испарением
+                        const inflowRate = totalMass * 0.1; // kg/min приток
+                        rate = Math.min(rate, inflowRate * 1.5); // испарение не может сильно превысить приток
+                        duration = Math.ceil(totalMass / rate); // минуты
+                        warning = `📊 CONTINUOUS LEAK (Pool Evaporation)<br>Площадь лужи: ${calculatedPoolArea.toFixed(1)} m²<br>Скорость утечки: ${inflowRate.toFixed(2)} kg/min<br>Время до опустошения: ~${duration} мин`;
+                    } else {
+                        // Мгновенный разлив
+                        rate = Math.min(rate, totalMass / 60); // макс. за 60 минут
+                        duration = Math.ceil(totalMass / rate); // минуты
+                        warning = `📊 INSTANT SPILL (Pool Evaporation)<br>Площадь лужи: ${calculatedPoolArea.toFixed(1)} m²<br>Температура: ${T_amb}°C (кипение: ${T_boil}°C)<br>Время испарения: ~${duration} мин`;
+                    }
+                }
+                
+                return {
+                    rate: Number.isFinite(rate) && rate > 0 ? rate : 0,
+                    scenario: scenario,
+                    warning: warning,
+                    totalMass: totalMass,
+                    poolArea: calculatedPoolArea,
+                    duration: duration
+                };
+            }
+            
+            // === РЕЖИМ 2: PUDDLE (Существующая лужа) ===
+            else if (sourceMode === 'puddle') {
+                // Используем ТОЛЬКО заданную площадь, игнорируем объем
+                const poolArea = puddleArea;
+                
+                if (!Number.isFinite(poolArea) || poolArea <= 0) {
+                    return { rate: 0, scenario: 'unknown', warning: 'Введите площадь лужи!', totalMass: 0, poolArea: 0, duration: 0 };
+                }
+                
+                // Оцениваем массу вещества (предполагаем глубину 1 см)
+                const estimatedVolume = poolArea * 0.01; // m³
+                const totalMass = estimatedVolume * 1000 * chemical.density; // кг
+                
+                // Проверяем состояние
+                let rate = 0;
+                let scenario = 'pool'; // Лужа всегда испаряется
+                let warning = '';
+                let duration = 0;
+                
+                if (T_amb > T_boil) {
+                    // Быстрое испарение (вещество кипит)
+                    const evaporationFactor = Math.pow(2, (T_amb - T_boil) / 10); // усиленное испарение
+                    const windFactor = 1 + (Number.isFinite(windSpeed) && windSpeed > 0 ? windSpeed / 10 : 0);
+                    const baseEvapRate = 0.002; // удвоенная скорость для кипящей жидкости
+                    rate = poolArea * baseEvapRate * evaporationFactor * windFactor;
+                    duration = Math.ceil(totalMass / rate);
+                    warning = `⚠️ EXISTING PUDDLE (Boiling)<br>Площадь: ${poolArea.toFixed(1)} m²<br>Вещество кипит! Быстрое испарение.<br>Время испарения: ~${duration} мин`;
+                } else {
+                    // Нормальное испарение
+                    const tempDiff = T_amb - T_boil;
+                    const evaporationFactor = Math.pow(2, tempDiff / 20);
+                    const windFactor = 1 + (Number.isFinite(windSpeed) && windSpeed > 0 ? windSpeed / 10 : 0);
+                    const baseEvapRate = 0.001;
+                    rate = poolArea * baseEvapRate * evaporationFactor * windFactor;
+                    duration = Math.ceil(totalMass / rate);
+                    warning = `📊 EXISTING PUDDLE (Evaporating)<br>Площадь: ${poolArea.toFixed(1)} m²<br>Оценочная масса: ${totalMass.toFixed(0)} кг (глубина ~1см)<br>Время испарения: ~${duration} мин`;
+                }
+                
+                return {
+                    rate: Number.isFinite(rate) && rate > 0 ? rate : 0,
+                    scenario: scenario,
+                    warning: warning,
+                    totalMass: totalMass,
+                    poolArea: poolArea,
+                    duration: duration
+                };
+            }
+            
+            // Fallback
+            return { rate: 0, scenario: 'unknown', warning: '', totalMass: 0, poolArea: 0, duration: 0 };
+        }
 
-</script>
+        // Arvuta tsoonide kaugused (ALOHA-põhine)
+        // Toetab nii TOXIC (AEGL) kui ka FLAMMABLE (LEL) aineid
+        function calculateZones(chemical, releaseRate, windSpeed, stability) {
+            // Kontrolli sisendväärtusi
+            if (!chemical || !Number.isFinite(releaseRate) || releaseRate <= 0) {
+                return { danger: 0, security: 0, clean: 0, zoneType: 'toxic' };
+            }
+            if (!Number.isFinite(windSpeed) || windSpeed <= 0) {
+                windSpeed = 0.1; // Vältida nulliga jagamist
+            }
+            
+            try {
+                // Stabiilsuse tegur
+                const stabF = { 
+                    inversion: 3.0,    // Öö - vähem hajumist
+                    neutral: 1.0,      // Pilves - keskmine
+                    convection: 0.3    // Päev - rohkem hajumist
+                };
+                const factor = stabF[stability] || 1.0;
+                
+                // === FLAMMABLE LOGIC (LEL-based) ===
+                // Проверяем тип вещества (по умолчанию 'toxic' если не указан)
+                const chemType = chemical.type || 'toxic';
+                if (chemType === 'flammable' && chemical.lel && chemical.molWeight) {
+                    // ПРАВИЛЬНЫЙ РАСЧЕТ: Пересчитываем LEL из ppm в mg/m³
+                    // Формула: C(mg/m³) = C(ppm) × MW / 24.45
+                    // где 24.45 = мольный объем газа при 25°C, 1 атм (литры)
+                    
+                    const lelPpm = chemical.lel;  // ppm (например, 21000 для пропана)
+                    const lelMgM3 = (lelPpm / 1000000) * (chemical.molWeight / 24.45) * 1000000; // mg/m³
+                    
+                    const lelSafetyPpm = lelPpm * 0.1; // 10% от LEL
+                    const lelSafetyMgM3 = (lelSafetyPpm / 1000000) * (chemical.molWeight / 24.45) * 1000000; // mg/m³
+                    
+                    // Теперь используем корректные единицы для расчета
+                    // releaseRate в kg/min = 1000 g/min
+                    // Упрощенная формула дисперсии (аналогично AEGL)
+                    
+                    // Flash Fire Zone (>= LEL) - КРАСНАЯ
+                    const distFlashFire = 0.1 * factor * Math.sqrt(releaseRate * 1000 / lelMgM3); // kg/min → g/min
+                    
+                    // Safety Buffer Zone (>= 10% LEL) - ОРАНЖЕВАЯ
+                    const distSafety = 0.1 * factor * Math.sqrt(releaseRate * 1000 / lelSafetyMgM3);
+                    
+                    const result = {
+                        danger: Number.isFinite(distFlashFire) && distFlashFire > 0 ? Math.min(100, Math.max(0.01, distFlashFire)) : 0,
+                        security: Number.isFinite(distSafety) && distSafety > 0 ? Math.min(100, Math.max(0.01, distSafety)) : 0,
+                        clean: 0, // Для flammable не используем 3-ю зону
+                        zoneType: 'flammable'
+                    };
+                    
+                    return result;
+                }
+                
+                // === TOXIC LOGIC (AEGL-based) === (старая логика)
+                if (!Number.isFinite(chemical.aegl1) || chemical.aegl1 <= 0 ||
+                    !Number.isFinite(chemical.aegl2) || chemical.aegl2 <= 0 ||
+                    !Number.isFinite(chemical.aegl3) || chemical.aegl3 <= 0) {
+                    return { danger: 0, security: 0, clean: 0, zoneType: 'toxic' };
+                }
+                
+                // Arvuta kaugused (kilomeetrites)
+                // Lihtsustatud ALOHA valem: dist = k * sqrt(amount / threshold)
+                const distRed = 0.1 * factor * Math.sqrt(releaseRate / chemical.aegl3);      // AEGL-3 (ohuala)
+                const distOrange = 0.1 * factor * Math.sqrt(releaseRate / chemical.aegl2);  // AEGL-2 (julgestusala)
+                const distGreen = 0.1 * factor * Math.sqrt(releaseRate / chemical.aegl1);   // AEGL-1 (puhas ala)
+                
+                // Kontrolli tulemusi
+                const result = {
+                    danger: Number.isFinite(distRed) && distRed > 0 ? Math.min(100, Math.max(0.01, distRed)) : 0,
+                    security: Number.isFinite(distOrange) && distOrange > 0 ? Math.min(100, Math.max(0.01, distOrange)) : 0,
+                    clean: Number.isFinite(distGreen) && distGreen > 0 ? Math.min(100, Math.max(0.01, distGreen)) : 0,
+                    zoneType: 'toxic'
+                };
+                
+                return result;
+            } catch (e) {
+                console.error('Error calculating zones:', e);
+                return { danger: 0, security: 0, clean: 0, zoneType: 'toxic' };
+            }
+        }
+
+        // BLEVE / FIREBALL расчет (для горящих цистерн)
+        // Возвращает радиусы тепловых зон в метрах
+        function calculateFireballZones(mass, heatOfCombustion) {
+            // mass - масса вещества в кг
+            // heatOfCombustion - теплота сгорания в кДж/кг
+            
+            if (!Number.isFinite(mass) || mass <= 0 || !Number.isFinite(heatOfCombustion) || heatOfCombustion <= 0) {
+                return { fireball: 0, secondDegree: 0, thermal: 0 };
+            }
+            
+            try {
+                // 1. Радиус огненного шара (Fireball Radius)
+                // Упрощенная формула: R = k * M^(1/3), где k ≈ 5-6 для углеводородов
+                const fireballRadius = 5.8 * Math.pow(mass, 1/3); // метров
+                
+                // 2. Тепловая энергия (Total Heat Release)
+                const totalHeat = mass * heatOfCombustion; // кДж
+                
+                // 3. Интенсивность излучения (Thermal Flux)
+                // Предполагаем, что 30-40% энергии идет в излучение
+                const radiatedEnergy = totalHeat * 0.35; // кДж
+                
+                // 4. Зоны теплового поражения
+                // Расчет по формуле: I = Q / (4 * π * R²), где I - интенсивность (кВт/м²)
+                
+                // ЗОНА 1: Смертельное излучение (>37.5 кВт/м² - 100% смертность за 10 сек)
+                // Упрощенно: радиус огненного шара
+                const lethalZone = fireballRadius;
+                
+                // ЗОНА 2: Ожоги 2-3 степени (12.5 кВт/м² - серьезные ожоги за 30-60 сек)
+                // I = radiatedEnergy / (4 * π * R²) => R = sqrt(radiatedEnergy / (4 * π * I))
+                const targetFlux2 = 12.5; // кВт/м²
+                const secondDegreeRadius = Math.sqrt((radiatedEnergy / 60) / (4 * Math.PI * targetFlux2)); // Деление на 60 для учета времени горения
+                
+                // ЗОНА 3: Болевой порог (4 кВт/м² - боль через 20-30 сек)
+                const targetFlux3 = 4; // кВт/м²
+                const thermalRadius = Math.sqrt((radiatedEnergy / 60) / (4 * Math.PI * targetFlux3));
+                
+                const result = {
+                    fireball: Number.isFinite(lethalZone) && lethalZone > 0 ? Math.min(5000, lethalZone) : 0,
+                    secondDegree: Number.isFinite(secondDegreeRadius) && secondDegreeRadius > 0 ? Math.min(5000, secondDegreeRadius) : 0,
+                    thermal: Number.isFinite(thermalRadius) && thermalRadius > 0 ? Math.min(5000, thermalRadius) : 0
+                };
+                
+                return result;
+            } catch (e) {
+                console.error('Error calculating fireball:', e);
+                return { fireball: 0, secondDegree: 0, thermal: 0 };
+            }
+        }
+
+        // Kiirgusmoodul - pöördruutude seadus
+        function calculateDoseRate(initialDoseRate, initialDistance, newDistance) {
+            // Kontrolli sisendväärtusi
+            if (!Number.isFinite(initialDoseRate) || initialDoseRate <= 0) {
+                return 0;
+            }
+            if (!Number.isFinite(initialDistance) || initialDistance <= 0) {
+                return 0;
+            }
+            if (!Number.isFinite(newDistance) || newDistance <= 0) {
+                return Infinity;
+            }
+            
+            try {
+                const result = initialDoseRate * Math.pow(initialDistance / newDistance, 2);
+                return Number.isFinite(result) ? result : 0;
+            } catch (e) {
+                console.error('Error calculating dose rate:', e);
+                return 0;
+            }
+        }
+
+        // STAY TIME arvutus
+        function calculateStayTime(doseRate, limit) {
+            // Kontrolli sisendväärtusi
+            if (!Number.isFinite(doseRate) || doseRate <= 0) {
+                return Infinity;
+            }
+            if (!Number.isFinite(limit) || limit <= 0) {
+                return Infinity;
+            }
+            
+            try {
+                const timeHours = limit / doseRate;
+                if (!Number.isFinite(timeHours)) {
+                    return Infinity;
+                }
+                return Math.max(0, Math.floor(timeHours * 60)); // minutites
+            } catch (e) {
+                console.error('Error calculating stay time:', e);
+                return Infinity;
+            }
+        }
+
+        // Arvuta kiirgusperimeetrid (IAEA standardid)
+        // Sisend: Mõõdetud doosikiirus (µSv/h), kaugus (m), isotoop
+        function calculateRadiationPerimetersIAEA(measuredDoseRate, measuredDistance, isotope) {
+            // Kontrolli sisendväärtusi
+            if (!Number.isFinite(measuredDoseRate) || measuredDoseRate <= 0) {
+                return { innerCordon: 0, criticalZone: 0 };
+            }
+            if (!Number.isFinite(measuredDistance) || measuredDistance <= 0) {
+                return { innerCordon: 0, criticalZone: 0 };
+            }
+            
+            try {
+                // Определяем тип излучения
+                const radiationType = isotope?.radiationType || 'gamma';
+                const maxRange = isotope?.maxRange || 10000;
+                
+                // Pöördruutude seadus: D1 * R1^2 = D2 * R2^2
+                // R2 = sqrt((D1 * R1^2) / D2)
+                const constantK = measuredDoseRate * (measuredDistance * measuredDistance);
+                
+                // 1. SISEMINE OTSELUS (Inner Cordon / Safety Perimeter)
+                // IAEA standard: 100 µSv/h
+                const innerCordonLimit = 100; // µSv/h
+                let innerCordonDistance = Math.sqrt(constantK / innerCordonLimit);
+                
+                // 2. KRITILINE TSOON (Turn-back value / Critical Zone)
+                // IAEA standard elu päästmiseks: 100 mSv/h = 100,000 µSv/h
+                const criticalZoneLimit = 100000; // µSv/h (100 mSv/h)
+                let criticalZoneDistance = Math.sqrt(constantK / criticalZoneLimit);
+                
+                // УЧЕТ ТИПА ИЗЛУЧЕНИЯ:
+                // Beta/Alpha имеют ограниченный пробег в воздухе!
+                if (radiationType === 'beta' || radiationType === 'alpha') {
+                    innerCordonDistance = Math.min(innerCordonDistance, maxRange);
+                    criticalZoneDistance = Math.min(criticalZoneDistance, maxRange);
+                }
+                
+                // Kontrolli tulemusi
+                return {
+                    innerCordon: Number.isFinite(innerCordonDistance) && innerCordonDistance > 0 
+                        ? Math.min(maxRange, innerCordonDistance) : 0,
+                    criticalZone: Number.isFinite(criticalZoneDistance) && criticalZoneDistance > 0 
+                        ? Math.min(maxRange, criticalZoneDistance) : 0,
+                    radiationType: radiationType // Возвращаем тип для отображения
+                };
+            } catch (e) {
+                console.error('Error calculating IAEA radiation perimeters:', e);
+                return { innerCordon: 0, criticalZone: 0, radiationType: 'gamma' };
+            }
+        }
+
+        // Konvertация дозовой мощности в µSv/h для расчетов
+        function convertToMicroSv(value, unit) {
+            if (!Number.isFinite(value) || value < 0) return 0;
+            
+            if (unit === 'nano') {
+                return value / 1000; // nSv -> µSv
+            } else if (unit === 'micro') {
+                return value; // µSv (без изменений)
+            } else if (unit === 'milli') {
+                return value * 1000; // mSv -> µSv
+            } else if (unit === 'base') {
+                return value * 1000000; // Sv -> µSv
+            }
+            return value;
+        }
+
+        // Нормализуем химикаты: добавляем недостающие поля для совместимости
+        let normalizedChemicalDatabase;
+        try {
+            normalizedChemicalDatabase = chemicalDatabase.map(chem => ({
+                ...chem,
+                type: chem.type || 'toxic',
+                lel: chem.lel !== undefined ? chem.lel : null,
+                uel: chem.uel !== undefined ? chem.uel : null,
+                heatOfCombustion: chem.heatOfCombustion !== undefined ? chem.heatOfCombustion : 0,
+                vaporPressure: chem.vaporPressure !== undefined ? chem.vaporPressure : 100
+            }));
+        } catch (error) {
+            console.error('Error normalizing chemical database:', error);
+            normalizedChemicalDatabase = chemicalDatabase;
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('chemical');
+            const [map, setMap] = useState(null);
+            const [mapInitialized, setMapInitialized] = useState(false);
+            const [panelCollapsed, setPanelCollapsed] = useState(false);
+            
+            // Keemiamooduli olek (Source Term Model)
+            const [selectedChemical, setSelectedChemical] = useState(normalizedChemicalDatabase[0]);
+            const [windSpeed, setWindSpeed] = useState(5); // m/s
+            const [windDirection, setWindDirection] = useState(270); // kraadid (0=põhi, 90=ida, 180=lõuna, 270=lääs)
+            const [stability, setStability] = useState('neutral'); // inversion, neutral, convection
+            const [releaseLocation, setReleaseLocation] = useState(null);
+            
+            // НОВЫЕ ПАРАМЕТРЫ - ENVIRONMENT & SOURCE
+            const [ambientTemperature, setAmbientTemperature] = useState(20); // °C
+            const [containerType, setContainerType] = useState('ibc1000'); // barrel200, ibc1000, tank20000
+            const [containerVolume, setContainerVolume] = useState(1000); // литры
+            const [poolArea, setPoolArea] = useState(null); // m² (null = автоматический расчет)
+            
+            // ВКЛЮЧЕНИЕ/ВЫКЛЮЧЕНИЕ ПАРАМЕТРОВ (упрощено - только критичные)
+            // useTemperature и usePoolArea УДАЛЕНЫ - всегда учитываются!
+            const [useWindSpeed, setUseWindSpeed] = useState(true); // Учитывать скорость ветра
+            const [useStability, setUseStability] = useState(true); // Учитывать стабильность
+            
+            // ОГНЕННЫЙ ШАР (для flammable веществ)
+            const [tankOnFire, setTankOnFire] = useState(false); // Режим "Цистерна в огне" (BLEVE)
+            
+            // НОВЫЕ ПАРАМЕТРЫ - PRESET SCENARIOS (упрощено!)
+            const [scenario, setScenario] = useState('instant'); // 'instant', 'puddle', 'leak'
+            const [puddleLength, setPuddleLength] = useState(10); // м (для puddle)
+            const [puddleWidth, setPuddleWidth] = useState(5); // м (для puddle)
+            
+            // Типы контейнеров
+            const containerTypes = {
+                barrel200: { name: 'Бочка 200L', volume: 200, icon: '🛢️' },
+                ibc1000: { name: 'Еврокуб 1000L', volume: 1000, icon: '📦' },
+                tank20000: { name: 'Цистерна 20000L', volume: 20000, icon: '🚛' }
+            };
+            
+            // Рассчитываем Source Term (физическая модель)
+            // Преобразуем scenario в параметры для calculateSourceTerm
+            const sourceMode = scenario === 'puddle' ? 'puddle' : 'container';
+            const continuousLeak = scenario === 'leak'; // true только для 'leak'
+            const effectivePuddleArea = scenario === 'puddle' ? puddleLength * puddleWidth : null;
+
+            const sourceTerm = calculateSourceTerm(
+                selectedChemical,
+                sourceMode,                      // 'container' или 'puddle'
+                containerVolume,                  // для container/instant/leak
+                effectivePuddleArea,              // для puddle (используется как puddleArea)
+                ambientTemperature,               // ВСЕГДА учитываем температуру!
+                useWindSpeed ? windSpeed : 0,    // скорость ветра
+                poolArea,                         // customPoolArea (ручной ввод для container)
+                continuousLeak                    // true для 'leak' scenario
+            );
+            
+            // Используем рассчитанную скорость выброса (kg/min → kg/h для совместимости)
+            const releaseRate = sourceTerm.rate * 60; // kg/min → kg/h
+            
+            // Kiirgusmooduli olek (IAEA standardid)
+            const [selectedIsotope, setSelectedIsotope] = useState(isotopeDatabase[0]);
+            const [doseRateUnit, setDoseRateUnit] = useState('micro'); // nano, micro, milli, base (Sv)
+            const [measuredDoseRate, setMeasuredDoseRate] = useState(1000); // отображаемое значение
+            const [measuredDistance, setMeasuredDistance] = useState(1); // m (mõõtmise kaugus)
+            const [radiationLocation, setRadiationLocation] = useState(null);
+            
+            const mapRef = useRef(null);
+            const markersRef = useRef([]);
+            const zonesRef = useRef([]);
+
+            // Puhasta kaart täielikult
+            const clearMap = useCallback((leafletMap) => {
+                if (!leafletMap) return;
+                try {
+                    zonesRef.current.forEach(zone => {
+                        try {
+                            if (zone && leafletMap.hasLayer(zone)) {
+                                leafletMap.removeLayer(zone);
+                            }
+                        } catch (e) {
+                            console.warn('Error removing zone:', e);
+                        }
+                    });
+                    zonesRef.current = [];
+                    
+                    markersRef.current.forEach(m => {
+                        try {
+                            if (m && leafletMap.hasLayer(m)) {
+                                leafletMap.removeLayer(m);
+                            }
+                        } catch (e) {
+                            console.warn('Error removing marker:', e);
+                        }
+                    });
+                    markersRef.current = [];
+                } catch (e) {
+                    console.error('Error clearing map:', e);
+                }
+            }, []);
+
+            useEffect(() => {
+                if (!mapInitialized && mapRef.current) {
+                    const leafletMap = L.map(mapRef.current).setView([59.4370, 24.7536], 10); // Tallinn
+                    
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors',
+                        maxZoom: 19
+                    }).addTo(leafletMap);
+                    
+                    setMap(leafletMap);
+                    setMapInitialized(true);
+                }
+            }, [mapInitialized]);
+
+            // Обработчик клика на карте
+            useEffect(() => {
+                if (!map) return;
+                
+                const handleMapClick = (e) => {
+                    const loc = [e.latlng.lat, e.latlng.lng];
+                    console.log('Map clicked:', loc, 'activeTab:', activeTab);
+                    
+                    if (activeTab === 'chemical') {
+                        setReleaseLocation(loc);
+                        setRadiationLocation(null);
+                    } else if (activeTab === 'radiation') {
+                        setRadiationLocation(loc);
+                        setReleaseLocation(null);
+                    }
+                };
+                
+                map.on('click', handleMapClick);
+                
+                return () => {
+                    map.off('click', handleMapClick);
+                };
+            }, [map, activeTab]);
+
+            // Puhasta kaart vahekaardi vahetamisel
+            useEffect(() => {
+                if (map) {
+                    clearMap(map);
+                }
+            }, [activeTab, map, clearMap]);
+
+            const updateChemicalZones = useCallback((leafletMap, location) => {
+                if (!leafletMap || !location || !Array.isArray(location) || location.length !== 2) {
+                    return;
+                }
+                if (!Number.isFinite(location[0]) || !Number.isFinite(location[1])) {
+                    return;
+                }
+                
+                try {
+                    // Eemalda vanad tsoonid ja markerid
+                    zonesRef.current.forEach(zone => {
+                        try {
+                            if (zone && leafletMap.hasLayer(zone)) {
+                                leafletMap.removeLayer(zone);
+                            }
+                        } catch (e) {
+                            console.warn('Error removing zone:', e);
+                        }
+                    });
+                    zonesRef.current = [];
+                    
+                    markersRef.current.forEach(m => {
+                        try {
+                            if (m && leafletMap.hasLayer(m)) {
+                                leafletMap.removeLayer(m);
+                            }
+                        } catch (e) {
+                            console.warn('Error removing marker:', e);
+                        }
+                    });
+                    markersRef.current = [];
+                    
+                    // === РЕЖИМ BLEVE / FIREBALL (для flammable веществ) ===
+                    const chemType = selectedChemical.type || 'toxic';
+                    if (tankOnFire && chemType === 'flammable') {
+                        // Рассчитываем массу вещества
+                        const totalMass = containerVolume * selectedChemical.density; // кг
+                        const fireballZones = calculateFireballZones(totalMass, selectedChemical.heatOfCombustion);
+                        
+                        // Проверка корректности расчета
+                        if (!Number.isFinite(fireballZones.fireball) || !Number.isFinite(fireballZones.secondDegree) || !Number.isFinite(fireballZones.thermal)) {
+                            console.warn('Invalid fireball calculations');
+                            return;
+                        }
+                        
+                        // Добавляем маркер источника (горящая цистерна)
+                        const fireIcon = L.divIcon({
+                            html: '<div style="font-size: 32px;">🔥</div>',
+                            className: 'fire-marker',
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 16]
+                        });
+                        const releaseMarker = L.marker(location, { icon: fireIcon })
+                            .bindPopup(`<b>🔥 TANK ON FIRE (BLEVE)</b><br>${selectedChemical.name}<br>Масса: ${totalMass.toFixed(0)} кг`)
+                            .addTo(leafletMap);
+                        markersRef.current.push(releaseMarker);
+                        
+                        // ЗОНА 1: FIREBALL (Смертельное излучение > 37.5 кВт/м²)
+                        if (fireballZones.fireball > 5) {
+                            try {
+                                const fireballCircle = L.circle(location, {
+                                    radius: fireballZones.fireball,
+                                    color: '#7f1d1d', // Dark red
+                                    fillColor: '#dc2626',
+                                    fillOpacity: 0.7,
+                                    weight: 4
+                                }).addTo(leafletMap);
+                                fireballCircle.bindPopup(`<b>⚠️ ОГНЕННЫЙ ШАР</b><br>Смертельное излучение<br>Радиус: ${fireballZones.fireball.toFixed(0)} m<br>I > 37.5 кВт/м²`);
+                                zonesRef.current.push(fireballCircle);
+                            } catch (e) {
+                                console.error('Error creating fireball zone:', e);
+                            }
+                        }
+                        
+                        // ЗОНА 2: ОЖОГИ 2-3 степени (12.5 кВт/м²)
+                        if (fireballZones.secondDegree > fireballZones.fireball) {
+                            try {
+                                const burnCircle = L.circle(location, {
+                                    radius: fireballZones.secondDegree,
+                                    color: '#ea580c', // Orange-600
+                                    fillColor: '#f97316',
+                                    fillOpacity: 0.4,
+                                    weight: 3,
+                                    dashArray: '10, 5'
+                                }).addTo(leafletMap);
+                                burnCircle.bindPopup(`<b>⚠️ ОЖОГИ 2-3 СТЕПЕНИ</b><br>Тепловое излучение<br>Радиус: ${fireballZones.secondDegree.toFixed(0)} m<br>I ≈ 12.5 кВт/м²`);
+                                zonesRef.current.push(burnCircle);
+                            } catch (e) {
+                                console.error('Error creating burn zone:', e);
+                            }
+                        }
+                        
+                        // ЗОНА 3: ТЕПЛОВОЕ ВОЗДЕЙСТВИЕ (4 кВт/м²)
+                        if (fireballZones.thermal > fireballZones.secondDegree) {
+                            try {
+                                const thermalCircle = L.circle(location, {
+                                    radius: fireballZones.thermal,
+                                    color: '#f59e0b', // Amber-500
+                                    fillColor: '#fbbf24',
+                                    fillOpacity: 0.2,
+                                    weight: 2,
+                                    dashArray: '5, 5'
+                                }).addTo(leafletMap);
+                                thermalCircle.bindPopup(`<b>⚠️ БОЛЕВОЙ ПОРОГ</b><br>Тепловое излучение<br>Радиус: ${fireballZones.thermal.toFixed(0)} m<br>I ≈ 4 кВт/м²`);
+                                zonesRef.current.push(thermalCircle);
+                            } catch (e) {
+                                console.error('Error creating thermal zone:', e);
+                            }
+                        }
+                        
+                        // Завершаем отрисовку - в режиме BLEVE не рисуем обычные зоны
+                        return;
+                    }
+                    
+                    // === ОБЫЧНЫЙ РЕЖИМ (Dispersion/Explosion) ===
+                    // Используем stability только если он включен, иначе 'neutral'
+                    const effectiveStability = useStability ? stability : 'neutral';
+                    const zones = calculateZones(selectedChemical, releaseRate, windSpeed, effectiveStability);
+                    
+                    // Kontrolli, et tsoonid on kehtivad
+                    if (!zones || !Number.isFinite(zones.danger) || !Number.isFinite(zones.security) || !Number.isFinite(zones.clean)) {
+                        console.warn('Invalid zone calculations');
+                        return;
+                    }
+                    
+                    // Отрисовка зон: КРУГИ (если ветер выключен) или ПЛЮМЫ (если ветер включен)
+                    const center = { lat: location[0], lng: location[1] };
+                    
+                    // ЕСЛИ ВЕТЕР ВЫКЛЮЧЕН → рисуем круги (симметричные зоны)
+                    if (!useWindSpeed || windSpeed < 0.5) {
+                        // Определяем тип зон (TOXIC vs FLAMMABLE)
+                        const isFlammable = (selectedChemical.type || 'toxic') === 'flammable';
+                        
+                        // Punane tsoon - КРУГ
+                        if (zones.danger > 0.01 && Number.isFinite(zones.danger)) {
+                            try {
+                                const redZone = L.circle(location, {
+                                    radius: zones.danger * 1000, // km → m
+                                    color: '#dc2626',
+                                    fillColor: '#dc2626',
+                                    fillOpacity: 0.5,
+                                    weight: 3
+                                }).addTo(leafletMap);
+                                
+                                const popupText = isFlammable 
+                                    ? `<b>🔥 FLASH FIRE ZONE</b><br>${selectedChemical.name}<br>Концентрация ≥ LEL (${selectedChemical.lel} ppm)<br>Raadius: ${(zones.danger * 1000).toFixed(0)} m`
+                                    : `<b>Ohuala (AEGL-3)</b><br>${selectedChemical.name}<br>Raadius: ${(zones.danger * 1000).toFixed(0)} m`;
+                                
+                                redZone.bindPopup(popupText);
+                                zonesRef.current.push(redZone);
+                            } catch (e) {
+                                console.error('Error creating red circle:', e);
+                            }
+                        }
+                        
+                        // Kollane tsoon - КРУГ
+                        if (zones.security > 0.01 && Number.isFinite(zones.security)) {
+                            try {
+                                const orangeZone = L.circle(location, {
+                                    radius: zones.security * 1000, // km → m
+                                    color: '#f97316',
+                                    fillColor: '#f97316',
+                                    fillOpacity: 0.3,
+                                    weight: 2
+                                }).addTo(leafletMap);
+                                
+                                const popupText = isFlammable 
+                                    ? `<b>⚠️ SAFETY BUFFER (10% LEL)</b><br>${selectedChemical.name}<br>Концентрация ≥ ${(selectedChemical.lel * 0.1).toFixed(0)} ppm<br>Raadius: ${(zones.security * 1000).toFixed(0)} m`
+                                    : `<b>Julgestusala (AEGL-2)</b><br>${selectedChemical.name}<br>Raadius: ${(zones.security * 1000).toFixed(0)} m`;
+                                
+                                orangeZone.bindPopup(popupText);
+                                zonesRef.current.push(orangeZone);
+                            } catch (e) {
+                                console.error('Error creating orange circle:', e);
+                            }
+                        }
+                        
+                        // Roheline tsoon (только для toxic) - КРУГ
+                        if (!isFlammable && zones.clean > 0.01 && Number.isFinite(zones.clean)) {
+                            try {
+                                const greenZone = L.circle(location, {
+                                    radius: zones.clean * 1000, // km → m
+                                    color: '#22c55e',
+                                    fillColor: '#22c55e',
+                                    fillOpacity: 0.2,
+                                    weight: 2,
+                                    dashArray: '5, 5'
+                                }).addTo(leafletMap);
+                                greenZone.bindPopup(`<b>Puhas ala (AEGL-1)</b><br>${selectedChemical.name}<br>Raadius: ${(zones.clean * 1000).toFixed(0)} m`);
+                                zonesRef.current.push(greenZone);
+                            } catch (e) {
+                                console.error('Error creating green circle:', e);
+                            }
+                        }
+                    } else {
+                        // ЕСЛИ ВЕТЕР ВКЛЮЧЕН → рисуем плюмы (вытянутые облака по ветру)
+                        const isFlammable = (selectedChemical.type || 'toxic') === 'flammable';
+                        
+                        // Punane tsoon - ПЛЮМ
+                        if (zones.danger > 0.01 && Number.isFinite(zones.danger)) {
+                            const redPlume = createPlumePolygon(center, zones.danger, windDirection, effectiveStability);
+                            if (redPlume && redPlume.length >= 3) {
+                                try {
+                                    const redZone = L.polygon(redPlume, {
+                                        color: '#dc2626',
+                                        fillColor: '#dc2626',
+                                        fillOpacity: 0.5,
+                                        weight: 3
+                                    }).addTo(leafletMap);
+                                    
+                                    const popupText = isFlammable 
+                                        ? `<b>🔥 FLASH FIRE ZONE</b><br>${selectedChemical.name}<br>Концентрация ≥ LEL (${selectedChemical.lel} ppm)<br>Kaugus: ${(zones.danger * 1000).toFixed(0)} m`
+                                        : `<b>Ohuala (AEGL-3)</b><br>${selectedChemical.name}<br>Kaugus: ${(zones.danger * 1000).toFixed(0)} m`;
+                                    
+                                    redZone.bindPopup(popupText);
+                                    zonesRef.current.push(redZone);
+                                } catch (e) {
+                                    console.error('Error creating red zone:', e);
+                                }
+                            }
+                        }
+                        
+                        // Kollane tsoon - ПЛЮМ
+                        if (zones.security > 0.01 && Number.isFinite(zones.security)) {
+                            const orangePlume = createPlumePolygon(center, zones.security, windDirection, effectiveStability);
+                            if (orangePlume && orangePlume.length >= 3) {
+                                try {
+                                    const orangeZone = L.polygon(orangePlume, {
+                                        color: '#f97316',
+                                        fillColor: '#f97316',
+                                        fillOpacity: 0.3,
+                                        weight: 2
+                                    }).addTo(leafletMap);
+                                    
+                                    const popupText = isFlammable 
+                                        ? `<b>⚠️ SAFETY BUFFER (10% LEL)</b><br>${selectedChemical.name}<br>Концентрация ≥ ${(selectedChemical.lel * 0.1).toFixed(0)} ppm<br>Kaugus: ${(zones.security * 1000).toFixed(0)} m`
+                                        : `<b>Julgestusala (AEGL-2)</b><br>${selectedChemical.name}<br>Kaugus: ${(zones.security * 1000).toFixed(0)} m`;
+                                    
+                                    orangeZone.bindPopup(popupText);
+                                    zonesRef.current.push(orangeZone);
+                                } catch (e) {
+                                    console.error('Error creating orange zone:', e);
+                                }
+                            }
+                        }
+                        
+                        // Roheline tsoon (только для toxic) - ПЛЮМ
+                        if (!isFlammable && zones.clean > 0.01 && Number.isFinite(zones.clean)) {
+                            const greenPlume = createPlumePolygon(center, zones.clean, windDirection, effectiveStability);
+                            if (greenPlume && greenPlume.length >= 3) {
+                                try {
+                                    const greenZone = L.polygon(greenPlume, {
+                                        color: '#22c55e',
+                                        fillColor: '#22c55e',
+                                        fillOpacity: 0.2,
+                                        weight: 2,
+                                        dashArray: '5, 5'
+                                    }).addTo(leafletMap);
+                                    greenZone.bindPopup(`<b>Puhas ala (AEGL-1)</b><br>${selectedChemical.name}<br>Kaugus: ${(zones.clean * 1000).toFixed(0)} m`);
+                                    zonesRef.current.push(greenZone);
+                                } catch (e) {
+                                    console.error('Error creating green zone:', e);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Märgista vabastuspunkt
+                    try {
+                        const marker = L.marker(location).addTo(leafletMap);
+                        marker.bindPopup(`<b>${selectedChemical.name}</b><br>Vabastuspunkt<br>Tuul: ${windDirection}° (${windSpeed} m/s)`).openPopup();
+                        markersRef.current.push(marker);
+                    } catch (e) {
+                        console.error('Error creating marker:', e);
+                    }
+                } catch (e) {
+                    console.error('Error in updateChemicalZones:', e);
+                }
+            }, [selectedChemical, releaseRate, windSpeed, windDirection, stability, ambientTemperature, containerVolume, poolArea, useStability, useWindSpeed, tankOnFire]);
+
+            const updateRadiationZones = useCallback((leafletMap, location) => {
+                if (!leafletMap || !location || !Array.isArray(location) || location.length !== 2) {
+                    return;
+                }
+                if (!Number.isFinite(location[0]) || !Number.isFinite(location[1])) {
+                    return;
+                }
+                
+                try {
+                    // Konvертируем в µSv/h для расчетов
+                    const doseRateInMicroSv = convertToMicroSv(measuredDoseRate, doseRateUnit);
+                    
+                    // Arvuta perimeetrid IAEA standardite järgi (с учетом типа излучения!)
+                    const perimeters = calculateRadiationPerimetersIAEA(doseRateInMicroSv, measuredDistance, selectedIsotope);
+                    
+                    // Kontrolli, et perimeetrid on kehtivad
+                    if (!perimeters || !Number.isFinite(perimeters.innerCordon) || !Number.isFinite(perimeters.criticalZone)) {
+                        console.warn('Invalid perimeter calculations');
+                        return;
+                    }
+                    
+                    // 1. SISEMINE OTSELUS (Inner Cordon) - Oranž punktiir
+                    if (perimeters.innerCordon > 0 && Number.isFinite(perimeters.innerCordon)) {
+                        try {
+                            const innerZone = L.circle(location, {
+                                radius: perimeters.innerCordon,
+                                color: '#f97316', // Oranž
+                                fillColor: '#f97316',
+                                fillOpacity: 0.2,
+                                weight: 3,
+                                dashArray: '10, 5' // Punktiir
+                            }).addTo(leafletMap);
+                            innerZone.bindPopup(`<b>SISEMINE OTSELUS (Inner Cordon)</b><br>IAEA: 100 µSv/h<br>Raadius: ${perimeters.innerCordon.toFixed(0)} m`);
+                            zonesRef.current.push(innerZone);
+                        } catch (e) {
+                            console.error('Error creating inner cordon:', e);
+                        }
+                    }
+                    
+                    // 2. KRITILINE TSOON (Critical Zone) - Punane täis
+                    if (perimeters.criticalZone > 0 && Number.isFinite(perimeters.criticalZone)) {
+                        try {
+                            const criticalZone = L.circle(location, {
+                                radius: perimeters.criticalZone,
+                                color: '#dc2626', // Punane
+                                fillColor: '#dc2626',
+                                fillOpacity: 0.5,
+                                weight: 3
+                            }).addTo(leafletMap);
+                            criticalZone.bindPopup(`<b>KRITILINE TSOON (Critical Zone)</b><br>IAEA: 100 mSv/h<br>Raadius: ${perimeters.criticalZone.toFixed(1)} m`);
+                            zonesRef.current.push(criticalZone);
+                        } catch (e) {
+                            console.error('Error creating critical zone:', e);
+                        }
+                    }
+                    
+                    // Märgista allikas
+                    try {
+                        const unitLabel = doseRateUnit === 'nano' ? 'nSv/h' : 
+                                         doseRateUnit === 'micro' ? 'µSv/h' : 
+                                         doseRateUnit === 'milli' ? 'mSv/h' : 'Sv/h';
+                        const marker = L.marker(location).addTo(leafletMap);
+                        marker.bindPopup(`<b>${selectedIsotope.name}</b><br>Allikas<br>Mõõdetud: ${measuredDoseRate} ${unitLabel} @ ${measuredDistance} m`).openPopup();
+                        markersRef.current.push(marker);
+                    } catch (e) {
+                        console.error('Error creating marker:', e);
+                    }
+                } catch (e) {
+                    console.error('Error in updateRadiationZones:', e);
+                }
+            }, [measuredDoseRate, measuredDistance, doseRateUnit, selectedIsotope]);
+
+            useEffect(() => {
+                if (map && activeTab === 'chemical' && releaseLocation) {
+                    clearMap(map);
+                    updateChemicalZones(map, releaseLocation);
+                }
+            }, [map, activeTab, releaseLocation, updateChemicalZones, clearMap, ambientTemperature, containerVolume, releaseRate, poolArea, useWindSpeed, useStability]);
+
+            useEffect(() => {
+                if (map && activeTab === 'radiation' && radiationLocation) {
+                    clearMap(map);
+                    updateRadiationZones(map, radiationLocation);
+                }
+            }, [map, activeTab, radiationLocation, measuredDoseRate, measuredDistance, updateRadiationZones, clearMap]);
+
+            // Arvuta radiaatsiooni tulemused (конвертируем в µSv/h)
+            const doseRateInMicroSvForDisplay = convertToMicroSv(measuredDoseRate, doseRateUnit);
+            const radiationResults = calculateRadiationPerimetersIAEA(doseRateInMicroSvForDisplay, measuredDistance, selectedIsotope);
+
+            const [bottomNavActive, setBottomNavActive] = useState('map');
+            
+            return (
+                <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+                    {/* Kaart taustal */}
+                    <div ref={mapRef} id="map"></div>
+                    
+                    {/* Боковая панель */}
+                    <div className={`sidebar ${panelCollapsed ? 'collapsed' : ''}`}>
+                        {/* Хедер */}
+                        <div className="app-header">
+                            <div className="app-logo">☢️</div>
+                            <div>
+                                <div className="app-title">CBRN <span className="app-title-sub">PRO</span></div>
+                            </div>
+                        </div>
+                        
+                        {/* Вкладки типов угроз */}
+                        <div className="threat-tabs">
+                            <div 
+                                className={`threat-tab ${activeTab === 'chemical' ? 'active' : ''}`}
+                                onClick={() => {
+                                    setActiveTab('chemical');
+                                    setRadiationLocation(null);
+                                }}
+                            >
+                                <div className="threat-icon">⚗️</div>
+                                <div>Keemia</div>
+                            </div>
+                            <div 
+                                className={`threat-tab ${activeTab === 'radiation' ? 'active' : ''}`}
+                                onClick={() => {
+                                    setActiveTab('radiation');
+                                    setReleaseLocation(null);
+                                }}
+                            >
+                                <div className="threat-icon">☢️</div>
+                                <div>Kiirgus</div>
+                            </div>
+                        </div>
+                        
+                        {/* Контент панели */}
+                        <div className="panel-content">
+                            {/* Keemiamoodul */}
+                            {activeTab === 'chemical' && (
+                                <div>
+                                    <div className="section">
+                                        <div className="section-title">⚗️ Keemiline aine</div>
+                                        <div className="input-group">
+                                            <label className="input-label">Vali aine</label>
+                                            <select
+                                                value={normalizedChemicalDatabase.findIndex(c => c.name === selectedChemical.name)}
+                                                onChange={(e) => setSelectedChemical(normalizedChemicalDatabase[parseInt(e.target.value)])}
+                                                className="tactical-select"
+                                            >
+                                                {normalizedChemicalDatabase.map((chem, idx) => (
+                                                    <option key={idx} value={idx}>{chem.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div style={{fontSize: '12px', color: '#8b92b0', marginTop: '8px', lineHeight: '1.5'}}>
+                                            <div><b>CAS:</b> {selectedChemical.cas}</div>
+                                            <div><b>Välimus:</b> {selectedChemical.appearance}</div>
+                                            <div><b>IDLH:</b> {selectedChemical.idlh} ppm</div>
+                                        </div>
+                                    </div>
+
+                                    {/* ENVIRONMENT (Среда) */}
+                                    <div className="section">
+                                        <div className="section-title">🌡️ ENVIRONMENT (Keskkond)</div>
+                                        
+                                        {/* Температура ВСЕГДА учитывается - toggle убран! */}
+                                        <div className="input-group">
+                                            <label className="input-label">Temperatuur (°C)</label>
+                                            <div className="slider-container">
+                                                <input
+                                                    type="range"
+                                                    min="-30"
+                                                    max="50"
+                                                    step="1"
+                                                    value={ambientTemperature}
+                                                    onChange={(e) => setAmbientTemperature(parseFloat(e.target.value))}
+                                                    className="tactical-slider"
+                                                />
+                                                <input
+                                                    type="number"
+                                                    min="-30"
+                                                    max="50"
+                                                    step="1"
+                                                    value={ambientTemperature}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value);
+                                                        if (!isNaN(val) && val >= -30 && val <= 50) {
+                                                            setAmbientTemperature(val);
+                                                        }
+                                                    }}
+                                                    className="slider-value"
+                                                />
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Показываем предупреждение о типе выброса */}
+                                        {sourceTerm.warning && (
+                                            <div style={{
+                                                marginTop: '12px',
+                                                padding: '12px',
+                                                background: sourceTerm.scenario === 'flash' 
+                                                    ? 'rgba(220, 38, 38, 0.2)' 
+                                                    : 'rgba(249, 115, 22, 0.2)',
+                                                border: `1px solid ${sourceTerm.scenario === 'flash' ? '#DC2626' : '#F97316'}`,
+                                                borderRadius: '10px',
+                                                fontSize: '11px',
+                                                lineHeight: '1.4',
+                                                color: '#ffffff'
+                                            }} dangerouslySetInnerHTML={{ __html: sourceTerm.warning }}>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* SOURCE (Источник) */}
+                                    <div className="section">
+                                        <div className="section-title">📦 SOURCE (Allikas)</div>
+                                        
+                                        {/* PRESET SCENARIOS - упрощенный выбор! */}
+                                        <div className="input-group">
+                                            <label className="input-label">Stsenaarium / Scenario</label>
+                                            <div className="button-group" style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px'}}>
+                                                <button
+                                                    onClick={() => setScenario('instant')}
+                                                    className={`option-button ${scenario === 'instant' ? 'active' : ''}`}
+                                                    style={{fontSize: '11px', padding: '8px 4px'}}
+                                                >
+                                                    📦
+                                                    <br/>
+                                                    <span style={{fontSize: '10px', fontWeight: '600'}}>INSTANT</span>
+                                                    <br/>
+                                                    <span style={{fontSize: '8px', opacity: 0.7}}>Kiire</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setScenario('puddle')}
+                                                    className={`option-button ${scenario === 'puddle' ? 'active' : ''}`}
+                                                    style={{fontSize: '11px', padding: '8px 4px'}}
+                                                >
+                                                    💧
+                                                    <br/>
+                                                    <span style={{fontSize: '10px', fontWeight: '600'}}>PUDDLE</span>
+                                                    <br/>
+                                                    <span style={{fontSize: '8px', opacity: 0.7}}>Lekke</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setScenario('leak')}
+                                                    className={`option-button ${scenario === 'leak' ? 'active' : ''}`}
+                                                    style={{fontSize: '11px', padding: '8px 4px'}}
+                                                >
+                                                    🚰
+                                                    <br/>
+                                                    <span style={{fontSize: '10px', fontWeight: '600'}}>LEAK</span>
+                                                    <br/>
+                                                    <span style={{fontSize: '8px', opacity: 0.7}}>Pidev</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Подсказка для выбранного сценария */}
+                                        <div style={{
+                                            marginTop: '8px',
+                                            padding: '8px',
+                                            background: 'rgba(59, 130, 246, 0.1)',
+                                            border: '1px solid rgba(59, 130, 246, 0.3)',
+                                            borderRadius: '6px',
+                                            fontSize: '10px',
+                                            lineHeight: '1.4',
+                                            color: '#60a5fa'
+                                        }}>
+                                            {scenario === 'instant' && '📦 Мгновенный разрыв цистерны - всё вещество выливается сразу'}
+                                            {scenario === 'puddle' && '💧 Лужа уже существует - введите размеры того, что видите'}
+                                            {scenario === 'leak' && '🚰 Струйная утечка - вещество вытекает постепенно (10%/мин)'}
+                                        </div>
+                                        
+                                        {/* === СЦЕНАРИЙ: INSTANT или LEAK (используют контейнер) === */}
+                                        {(scenario === 'instant' || scenario === 'leak') && (
+                                            <>
+                                                <div className="input-group">
+                                                    <label className="input-label">Konteiner</label>
+                                                    <select
+                                                        value={containerType}
+                                                        onChange={(e) => {
+                                                            setContainerType(e.target.value);
+                                                            setContainerVolume(containerTypes[e.target.value].volume);
+                                                        }}
+                                                        className="tactical-select"
+                                                    >
+                                                        <option value="barrel200">{containerTypes.barrel200.icon} {containerTypes.barrel200.name}</option>
+                                                        <option value="ibc1000">{containerTypes.ibc1000.icon} {containerTypes.ibc1000.name}</option>
+                                                        <option value="tank20000">{containerTypes.tank20000.icon} {containerTypes.tank20000.name}</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div className="input-group">
+                                                    <label className="input-label">Maht (litrid)</label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="100000"
+                                                        step="1"
+                                                        value={containerVolume}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value);
+                                                            if (!isNaN(val) && val > 0) {
+                                                                setContainerVolume(val);
+                                                            }
+                                                        }}
+                                                        className="tactical-input"
+                                                        style={{fontFamily: 'monospace', fontSize: '16px', fontWeight: '700'}}
+                                                    />
+                                                </div>
+                                                
+                                                {/* Continuous Leak checkbox УДАЛЕН - теперь это отдельный сценарий! */}
+                                                
+                                                {/* Площадь разлива - ВСЕГДА учитывается (toggle убран!) */}
+                                                <div className="input-group" style={{marginTop: '12px'}}>
+                                                    <label className="input-label">
+                                                        Lekke pindala (m²) 
+                                                        <span style={{fontSize: '10px', color: '#6b7280', marginLeft: '6px'}}>
+                                                            {poolArea === null ? '(automaatne)' : '(käsitsi)'}
+                                                        </span>
+                                                    </label>
+                                                    <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                                                        <input
+                                                            type="number"
+                                                            min="0.1"
+                                                            max="10000"
+                                                            step="0.1"
+                                                            value={poolArea !== null ? poolArea : sourceTerm.poolArea.toFixed(1)}
+                                                            onChange={(e) => {
+                                                                const val = parseFloat(e.target.value);
+                                                                if (!isNaN(val) && val > 0) {
+                                                                    setPoolArea(val);
+                                                                }
+                                                            }}
+                                                            className="tactical-input"
+                                                            style={{fontFamily: 'monospace', fontSize: '16px', fontWeight: '700', flex: 1}}
+                                                            placeholder="Auto"
+                                                        />
+                                                        <button
+                                                            onClick={() => setPoolArea(null)}
+                                                            style={{
+                                                                padding: '10px 16px',
+                                                                background: poolArea === null ? 'rgba(99, 102, 241, 0.2)' : 'rgba(51, 65, 85, 0.6)',
+                                                                border: poolArea === null ? '1px solid #6366f1' : '1px solid rgba(255, 255, 255, 0.1)',
+                                                                borderRadius: '8px',
+                                                                color: '#ffffff',
+                                                                fontSize: '12px',
+                                                                fontWeight: '700',
+                                                                cursor: 'pointer',
+                                                                transition: 'all 0.2s',
+                                                                whiteSpace: 'nowrap'
+                                                            }}
+                                                        >
+                                                            AUTO
+                                                        </button>
+                                                    </div>
+                                                    <div style={{fontSize: '11px', color: '#8b92b0', marginTop: '6px', lineHeight: '1.4'}}>
+                                                        💡 Площадь испарения напрямую влияет на скорость выброса.
+                                                        <br/>
+                                                        AUTO: площадь = объем / глубина (1 см)
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                        
+                                        {/* === СЦЕНАРИЙ: PUDDLE (существующая лужа) === */}
+                                        {scenario === 'puddle' && (
+                                            <>
+                                                <div style={{
+                                                    marginBottom: '12px',
+                                                    padding: '10px',
+                                                    background: 'rgba(59, 130, 246, 0.1)',
+                                                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                                                    borderRadius: '8px',
+                                                    fontSize: '11px',
+                                                    lineHeight: '1.4',
+                                                    color: '#60a5fa'
+                                                }}>
+                                                    ℹ️ <b>PUDDLE MODE:</b>
+                                                    <br/>
+                                                    Используйте для существующих разливов.
+                                                    <br/>
+                                                    Введите размеры лужи, которую видите.
+                                                </div>
+                                                
+                                                <div className="input-group">
+                                                    <label className="input-label">Pool Length / Lekke pikkus (m)</label>
+                                                    <input
+                                                        type="number"
+                                                        min="0.1"
+                                                        max="1000"
+                                                        step="0.1"
+                                                        value={puddleLength}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value);
+                                                            if (!isNaN(val) && val > 0) {
+                                                                setPuddleLength(val);
+                                                            }
+                                                        }}
+                                                        className="tactical-input"
+                                                        style={{fontFamily: 'monospace', fontSize: '16px', fontWeight: '700'}}
+                                                    />
+                                                </div>
+                                                
+                                                <div className="input-group">
+                                                    <label className="input-label">Pool Width / Lekke laius (m)</label>
+                                                    <input
+                                                        type="number"
+                                                        min="0.1"
+                                                        max="1000"
+                                                        step="0.1"
+                                                        value={puddleWidth}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value);
+                                                            if (!isNaN(val) && val > 0) {
+                                                                setPuddleWidth(val);
+                                                            }
+                                                        }}
+                                                        className="tactical-input"
+                                                        style={{fontFamily: 'monospace', fontSize: '16px', fontWeight: '700'}}
+                                                    />
+                                                </div>
+                                                
+                                                <div style={{
+                                                    marginTop: '8px',
+                                                    padding: '10px',
+                                                    background: 'rgba(99, 102, 241, 0.1)',
+                                                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                                                    borderRadius: '8px',
+                                                    fontSize: '12px',
+                                                    lineHeight: '1.4'
+                                                }}>
+                                                    <div style={{fontWeight: '700', color: '#9ca3af', marginBottom: '4px'}}>
+                                                        CALCULATED AREA:
+                                                    </div>
+                                                    <div style={{fontSize: '20px', fontWeight: '800', color: '#ffffff', fontFamily: 'monospace'}}>
+                                                        {(puddleLength * puddleWidth).toFixed(1)} m²
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                        
+                                        {/* Показываем рассчитанную скорость выброса */}
+                                        <div style={{
+                                            marginTop: '12px',
+                                            padding: '12px',
+                                            background: 'rgba(99, 102, 241, 0.1)',
+                                            border: '1px solid rgba(99, 102, 241, 0.3)',
+                                            borderRadius: '10px',
+                                            fontSize: '12px',
+                                            lineHeight: '1.5'
+                                        }}>
+                                            <div style={{fontWeight: '700', color: '#9ca3af', marginBottom: '4px'}}>
+                                                CALCULATED SOURCE STRENGTH:
+                                            </div>
+                                            <div style={{fontSize: '20px', fontWeight: '800', color: '#ffffff', fontFamily: 'monospace'}}>
+                                                {sourceTerm.rate.toFixed(2)} kg/min
+                                            </div>
+                                            <div style={{fontSize: '11px', color: '#8b92b0', marginTop: '4px'}}>
+                                                ({releaseRate.toFixed(0)} kg/h)
+                                            </div>
+                                            {sourceTerm.totalMass > 0 && (
+                                                <div style={{fontSize: '11px', color: '#8b92b0', marginTop: '4px'}}>
+                                                    Total mass: {sourceTerm.totalMass.toFixed(0)} kg
+                                                </div>
+                                            )}
+                                            {sourceTerm.duration > 0 && (
+                                                <div style={{fontSize: '11px', color: '#fbbf24', marginTop: '6px', fontWeight: '700'}}>
+                                                    ⏱️ Estimated Duration: {sourceTerm.duration} min
+                                                    {sourceTerm.duration > 60 && ` (${(sourceTerm.duration/60).toFixed(1)} h)`}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="section">
+                                        <div className="section-title">🌬️ Tuule tingimused</div>
+                                        
+                                        {/* Переключатель ветра */}
+                                        <div className={`toggle-container ${!useWindSpeed ? 'disabled' : ''}`}>
+                                            <div className="toggle-label">
+                                                <span>💨</span>
+                                                <span>Tuule mõju</span>
+                                            </div>
+                                            <div 
+                                                className={`toggle-switch ${useWindSpeed ? 'active' : ''}`}
+                                                onClick={() => setUseWindSpeed(!useWindSpeed)}
+                                            >
+                                                <div className="toggle-thumb"></div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="input-group" style={{opacity: useWindSpeed ? 1 : 0.4, pointerEvents: useWindSpeed ? 'auto' : 'none'}}>
+                                            <label className="input-label">Tuule kiirus (m/s)</label>
+                                            <div className="slider-container">
+                                                <input
+                                                    type="range"
+                                                    min="0.5"
+                                                    max="20"
+                                                    step="0.5"
+                                                    value={windSpeed}
+                                                    onChange={(e) => setWindSpeed(parseFloat(e.target.value))}
+                                                    className="tactical-slider"
+                                                />
+                                                <input
+                                                    type="number"
+                                                    min="0.5"
+                                                    max="20"
+                                                    step="0.1"
+                                                    value={windSpeed}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value);
+                                                        if (!isNaN(val) && val >= 0.5 && val <= 20) {
+                                                            setWindSpeed(val);
+                                                        }
+                                                    }}
+                                                    className="slider-value"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="input-group" style={{opacity: useWindSpeed ? 1 : 0.4, pointerEvents: useWindSpeed ? 'auto' : 'none'}}>
+                                            <label className="input-label">Tuule suund (°)</label>
+                                            <div className="slider-container">
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="360"
+                                                    step="1"
+                                                    value={windDirection}
+                                                    onChange={(e) => setWindDirection(parseFloat(e.target.value))}
+                                                    className="tactical-slider"
+                                                />
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="360"
+                                                    step="1"
+                                                    value={windDirection}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value);
+                                                        if (!isNaN(val) && val >= 0 && val <= 360) {
+                                                            setWindDirection(val);
+                                                        }
+                                                    }}
+                                                    className="slider-value"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Переключатель стабильности */}
+                                        <div className={`toggle-container ${!useStability ? 'disabled' : ''}`}>
+                                            <div className="toggle-label">
+                                                <span>🌤️</span>
+                                                <span>Atmosfääri stabiilsuse mõju</span>
+                                            </div>
+                                            <div 
+                                                className={`toggle-switch ${useStability ? 'active' : ''}`}
+                                                onClick={() => setUseStability(!useStability)}
+                                            >
+                                                <div className="toggle-thumb"></div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="input-group" style={{opacity: useStability ? 1 : 0.4, pointerEvents: useStability ? 'auto' : 'none'}}>
+                                            <label className="input-label">Atmosfääri stabiilsus</label>
+                                            <div className="button-group">
+                                                <button
+                                                    onClick={() => setStability('convection')}
+                                                    className={`option-button ${stability === 'convection' ? 'active' : ''}`}
+                                                >
+                                                    ☀️ Päev
+                                                </button>
+                                                <button
+                                                    onClick={() => setStability('neutral')}
+                                                    className={`option-button ${stability === 'neutral' ? 'active' : ''}`}
+                                                >
+                                                    ☁️ Pilves
+                                                </button>
+                                                <button
+                                                    onClick={() => setStability('inversion')}
+                                                    className={`option-button ${stability === 'inversion' ? 'active' : ''}`}
+                                                >
+                                                    🌙 Öö
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* BLEVE / TANK ON FIRE режим (только для flammable) */}
+                                        {(selectedChemical.type === 'flammable') && (
+                                            <>
+                                                <div style={{
+                                                    margin: '16px 0',
+                                                    height: '1px',
+                                                    background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)'
+                                                }}></div>
+                                                
+                                                <div className="toggle-container" style={{
+                                                    background: tankOnFire ? 'rgba(234, 88, 12, 0.15)' : 'rgba(51, 65, 85, 0.3)',
+                                                    border: tankOnFire ? '1px solid rgba(234, 88, 12, 0.4)' : '1px solid rgba(255, 255, 255, 0.05)',
+                                                    padding: '12px',
+                                                    borderRadius: '12px'
+                                                }}>
+                                                    <div className="toggle-label">
+                                                        <span style={{fontSize: '20px'}}>🔥</span>
+                                                        <div>
+                                                            <div style={{fontSize: '14px', fontWeight: '700', color: '#ffffff'}}>
+                                                                TANK ON FIRE (BLEVE)
+                                                            </div>
+                                                            <div style={{fontSize: '10px', color: '#9ca3af', marginTop: '2px'}}>
+                                                                Тепловое излучение от огненного шара
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div 
+                                                        className={`toggle-switch ${tankOnFire ? 'active' : ''}`}
+                                                        onClick={() => setTankOnFire(!tankOnFire)}
+                                                        style={{
+                                                            background: tankOnFire ? 'linear-gradient(135deg, #ea580c, #dc2626)' : 'rgba(51, 65, 85, 0.6)'
+                                                        }}
+                                                    >
+                                                        <div className="toggle-thumb"></div>
+                                                    </div>
+                                                </div>
+                                                
+                                                {tankOnFire && (
+                                                    <div style={{
+                                                        marginTop: '12px',
+                                                        padding: '10px',
+                                                        background: 'rgba(234, 88, 12, 0.1)',
+                                                        border: '1px solid rgba(234, 88, 12, 0.3)',
+                                                        borderRadius: '8px',
+                                                        fontSize: '11px',
+                                                        lineHeight: '1.5',
+                                                        color: '#fbbf24'
+                                                    }}>
+                                                        ⚠️ <b>BLEVE-режим активирован!</b>
+                                                        <br/>
+                                                        Расчет тепловых зон от взрыва расширяющихся паров кипящей жидкости.
+                                                        <br/>
+                                                        Ветер НЕ влияет на форму зон (симметричные круги).
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+
+                                    <div style={{padding: '12px', textAlign: 'center', fontSize: '13px', color: '#8b92b0'}}>
+                                        📍 Kliki kaardil, et määrata vabastuspunkt
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Kiirgusmoodul */}
+                            {activeTab === 'radiation' && (
+                                <div>
+                                    <div className="section">
+                                        <div className="section-title">☢️ Isotoop</div>
+                                        <div className="input-group">
+                                            <label className="input-label">Vali isotoop</label>
+                                            <select
+                                                value={isotopeDatabase.findIndex(i => i.name === selectedIsotope.name)}
+                                                onChange={(e) => setSelectedIsotope(isotopeDatabase[parseInt(e.target.value)])}
+                                                className="tactical-select"
+                                            >
+                                                {isotopeDatabase.map((iso, idx) => (
+                                                    <option key={idx} value={idx}>{iso.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div style={{fontSize: '12px', color: '#8b92b0', marginTop: '8px', lineHeight: '1.5'}}>
+                                            <div><b>Poolestusaeg:</b> {selectedIsotope.halfLife}</div>
+                                            <div><b>Ohtlikkus:</b> {selectedIsotope.dangerLevel}</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="section">
+                                        <div className="section-title">📊 Mõõtmise andmed</div>
+                                        
+                                        <div className="input-group">
+                                            <label className="input-label">Ühik</label>
+                                            <select
+                                                value={doseRateUnit}
+                                                onChange={(e) => {
+                                                    const newUnit = e.target.value;
+                                                    const currentInMicro = convertToMicroSv(measuredDoseRate, doseRateUnit);
+                                                    let newValue;
+                                                    if (newUnit === 'nano') {
+                                                        newValue = currentInMicro * 1000;
+                                                    } else if (newUnit === 'micro') {
+                                                        newValue = currentInMicro;
+                                                    } else if (newUnit === 'milli') {
+                                                        newValue = currentInMicro / 1000;
+                                                    } else if (newUnit === 'base') {
+                                                        newValue = currentInMicro / 1000000;
+                                                    }
+                                                    setDoseRateUnit(newUnit);
+                                                    setMeasuredDoseRate(newValue);
+                                                }}
+                                                className="tactical-select"
+                                            >
+                                                <option value="nano">nSv/h (nano)</option>
+                                                <option value="micro">µSv/h (mikro)</option>
+                                                <option value="milli">mSv/h (milli)</option>
+                                                <option value="base">Sv/h (sivert)</option>
+                                            </select>
+                                        </div>
+
+                                        
+                                        <div className="input-group">
+                                            <label className="input-label">
+                                                Mõõdetud doosikiirus ({doseRateUnit === 'nano' ? 'nSv/h' : doseRateUnit === 'micro' ? 'µSv/h' : doseRateUnit === 'milli' ? 'mSv/h' : 'Sv/h'})
+                                            </label>
+                                            <div className="slider-container">
+                                                <input
+                                                    type="range"
+                                                    min={doseRateUnit === 'nano' ? 1 : doseRateUnit === 'micro' ? 0.001 : doseRateUnit === 'milli' ? 0.000001 : 0.000000001}
+                                                    max={doseRateUnit === 'nano' ? 100000000 : doseRateUnit === 'micro' ? 100000 : doseRateUnit === 'milli' ? 100 : 0.1}
+                                                    step={doseRateUnit === 'nano' ? 1000 : doseRateUnit === 'micro' ? 1 : doseRateUnit === 'milli' ? 0.001 : 0.000001}
+                                                    value={measuredDoseRate}
+                                                    onChange={(e) => setMeasuredDoseRate(parseFloat(e.target.value))}
+                                                    className="tactical-slider"
+                                                />
+                                                <input
+                                                    type="number"
+                                                    min={doseRateUnit === 'nano' ? 1 : doseRateUnit === 'micro' ? 0.001 : doseRateUnit === 'milli' ? 0.000001 : 0.000000001}
+                                                    max={doseRateUnit === 'nano' ? 100000000 : doseRateUnit === 'micro' ? 100000 : doseRateUnit === 'milli' ? 100 : 0.1}
+                                                    step={doseRateUnit === 'nano' ? 1000 : doseRateUnit === 'micro' ? 1 : doseRateUnit === 'milli' ? 0.001 : 0.000001}
+                                                    value={measuredDoseRate}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value);
+                                                        const min = doseRateUnit === 'nano' ? 1 : doseRateUnit === 'micro' ? 0.001 : doseRateUnit === 'milli' ? 0.000001 : 0.000000001;
+                                                        const max = doseRateUnit === 'nano' ? 100000000 : doseRateUnit === 'micro' ? 100000 : doseRateUnit === 'milli' ? 100 : 0.1;
+                                                        if (!isNaN(val) && val >= min && val <= max) {
+                                                            setMeasuredDoseRate(val);
+                                                        }
+                                                    }}
+                                                    className="slider-value"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="input-group">
+                                            <label className="input-label">Mõõtmise kaugus (m)</label>
+                                            <div className="slider-container">
+                                                <input
+                                                    type="range"
+                                                    min="0.1"
+                                                    max="100"
+                                                    step="0.1"
+                                                    value={measuredDistance}
+                                                    onChange={(e) => setMeasuredDistance(parseFloat(e.target.value))}
+                                                    className="tactical-slider"
+                                                />
+                                                <input
+                                                    type="number"
+                                                    min="0.1"
+                                                    max="100"
+                                                    step="0.1"
+                                                    value={measuredDistance}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value);
+                                                        if (!isNaN(val) && val >= 0.1 && val <= 100) {
+                                                            setMeasuredDistance(val);
+                                                        }
+                                                    }}
+                                                    className="slider-value"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {radiationResults && (radiationResults.innerCordon > 0 || radiationResults.criticalZone > 0) && (
+                                        <div className="results-panel">
+                                            <div style={{fontSize: '14px', fontWeight: '700', color: '#ffffff', marginBottom: '12px'}}>
+                                                IAEA Perimeetrid
+                                            </div>
+                                            
+                                            <div className="result-item">
+                                                <div className="result-icon orange">🟠</div>
+                                                <div className="result-info">
+                                                    <div className="result-label">Inner Cordon (100 µSv/h)</div>
+                                                    <div className="result-value">{radiationResults.innerCordon.toFixed(0)} m</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="result-item" style={{marginBottom: '0'}}>
+                                                <div className="result-icon red">🔴</div>
+                                                <div className="result-info">
+                                                    <div className="result-label">Critical Zone (100 mSv/h)</div>
+                                                    <div className="result-value">{radiationResults.criticalZone.toFixed(1)} m</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div style={{padding: '12px', textAlign: 'center', fontSize: '13px', color: '#8b92b0'}}>
+                                        📍 Kliki kaardil, et määrata allika asukoht
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Кнопка сворачивания */}
+                    <div className={`toggle-sidebar ${panelCollapsed ? 'collapsed' : ''}`} onClick={() => setPanelCollapsed(!panelCollapsed)}>
+                        {panelCollapsed ? '☰' : '×'}
+                    </div>
+                    
+                    {/* Нижняя навигация */}
+                    <div className="bottom-nav">
+                        <div className={`nav-item ${bottomNavActive === 'map' ? 'active' : ''}`} onClick={() => setBottomNavActive('map')}>
+                            <div className="nav-icon">🗺️</div>
+                            <div className="nav-label">Kaart</div>
+                        </div>
+                        <div className={`nav-item ${bottomNavActive === 'data' ? 'active' : ''}`} onClick={() => setBottomNavActive('data')}>
+                            <div className="nav-icon">📊</div>
+                            <div className="nav-label">Andmed</div>
+                        </div>
+                        <div className={`nav-item ${bottomNavActive === 'tools' ? 'active' : ''}`} onClick={() => setBottomNavActive('tools')}>
+                            <div className="nav-icon">🛠️</div>
+                            <div className="nav-label">Tööriistad</div>
+                        </div>
+                        <div className={`nav-item ${bottomNavActive === 'report' ? 'active' : ''}`} onClick={() => setBottomNavActive('report')}>
+                            <div className="nav-icon">📋</div>
+                            <div className="nav-label">Aruanne</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Обработка ошибок рендеринга
+        try {
+            ReactDOM.render(<App />, document.getElementById('root'));
+        } catch (error) {
+            console.error('Fatal error:', error);
+            document.body.innerHTML = '<div style="color: white; padding: 20px; font-family: monospace;"><h1>ERROR</h1><pre>' + error.toString() + '</pre><p>Check console for details (F12)</p></div>';
+        }
+    </script>
 </body>
 </html>
