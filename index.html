@@ -472,13 +472,14 @@
         
         .nav-item {
             flex: 1;
+            max-width: 200px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 8px;
             cursor: pointer;
-            padding: 12px 16px;
+            padding: 12px 20px;
             color: #6b7280; /* Gray-500 */
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 12px;
@@ -606,37 +607,153 @@
             margin-right: 8px;
         }
         
-        /* Адаптивность */
+        /* Адаптивность для мобильных */
         @media (max-width: 768px) {
+            /* ПОРТРЕТНАЯ ОРИЕНТАЦИЯ (вертикально) */
             .sidebar {
                 width: 100%;
+                height: 50vh;
                 bottom: 80px;
+                overflow-y: auto;
+                transform: translateY(0);
+            }
+            
+            .sidebar.collapsed {
+                transform: translateY(-100%);
+            }
+            
+            #map {
+                height: 100vh;
             }
             
             .toggle-sidebar {
                 left: auto;
-                right: 24px;
+                right: 16px;
+                top: 16px;
+                z-index: 2000;
+                background: rgba(249, 115, 22, 0.95);
+                padding: 12px;
+                border-radius: 50%;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
             }
             
-            .toggle-sidebar.collapsed {
-                left: auto;
-                right: 24px;
+            .app-header {
+                padding: 12px 16px;
             }
             
+            .app-title {
+                font-size: 20px;
+            }
+            
+            .content-area {
+                padding: 12px;
+                max-height: calc(50vh - 140px);
+                overflow-y: auto;
+            }
+            
+            /* ОБЩИЕ СТИЛИ ДЛЯ МОБИЛЬНЫХ */
             .bottom-nav {
                 padding: 0 8px;
+                height: 80px;
             }
             
             .nav-item {
-                padding: 8px;
+                padding: 8px 4px;
             }
             
             .nav-icon {
-                font-size: 24px;
+                font-size: 22px;
             }
             
             .nav-label {
+                font-size: 9px;
+            }
+            
+            .option-button {
+                padding: 8px 6px;
+                font-size: 11px;
+            }
+            
+            .info-card {
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+            
+            .info-card-title {
                 font-size: 10px;
+            }
+            
+            .info-card-value {
+                font-size: 16px;
+            }
+        }
+        
+        /* ЛАНДШАФТНАЯ ОРИЕНТАЦИЯ (горизонтально) */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .sidebar {
+                width: 320px;
+                height: calc(100vh - 80px);
+                bottom: 80px;
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+            
+            .sidebar.collapsed {
+                transform: translateX(-100%);
+            }
+            
+            .app-header {
+                padding: 10px 12px;
+            }
+            
+            .app-title {
+                font-size: 18px;
+            }
+            
+            .app-logo {
+                width: 32px;
+                height: 32px;
+                font-size: 18px;
+            }
+            
+            .content-area {
+                padding: 10px;
+                max-height: calc(100vh - 200px);
+                overflow-y: auto;
+            }
+            
+            .input-group {
+                margin-bottom: 10px;
+            }
+            
+            .tactical-input,
+            .tactical-select {
+                font-size: 14px;
+                padding: 8px;
+            }
+            
+            .toggle-sidebar {
+                left: 8px;
+                top: 50%;
+                transform: translateY(-50%);
+                right: auto;
+            }
+        }
+        
+        /* Очень маленькие экраны (телефоны < 375px) */
+        @media (max-width: 375px) {
+            .sidebar {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 375px) and (orientation: landscape) {
+            .sidebar {
+                width: 280px;
+            }
+            
+            .app-title {
+                font-size: 16px;
             }
         }
         
@@ -1877,8 +1994,6 @@
             // Arvuta radiaatsiooni tulemused (конвертируем в µSv/h)
             const doseRateInMicroSvForDisplay = convertToMicroSv(measuredDoseRate, doseRateUnit);
             const radiationResults = calculateRadiationPerimetersIAEA(doseRateInMicroSvForDisplay, measuredDistance, selectedIsotope);
-
-            const [bottomNavActive, setBottomNavActive] = useState('map');
             
             return (
                 <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
@@ -1892,30 +2007,6 @@
                             <div className="app-logo">☢️</div>
                             <div>
                                 <div className="app-title">CBRN <span className="app-title-sub">PRO</span></div>
-                            </div>
-                        </div>
-                        
-                        {/* Вкладки типов угроз */}
-                        <div className="threat-tabs">
-                            <div 
-                                className={`threat-tab ${activeTab === 'chemical' ? 'active' : ''}`}
-                                onClick={() => {
-                                    setActiveTab('chemical');
-                                    setRadiationLocation(null);
-                                }}
-                            >
-                                <div className="threat-icon">⚗️</div>
-                                <div>Keemia</div>
-                            </div>
-                            <div 
-                                className={`threat-tab ${activeTab === 'radiation' ? 'active' : ''}`}
-                                onClick={() => {
-                                    setActiveTab('radiation');
-                                    setReleaseLocation(null);
-                                }}
-                            >
-                                <div className="threat-icon">☢️</div>
-                                <div>Kiirgus</div>
                             </div>
                         </div>
                         
@@ -2595,21 +2686,25 @@
                     
                     {/* Нижняя навигация */}
                     <div className="bottom-nav">
-                        <div className={`nav-item ${bottomNavActive === 'map' ? 'active' : ''}`} onClick={() => setBottomNavActive('map')}>
-                            <div className="nav-icon">🗺️</div>
-                            <div className="nav-label">Kaart</div>
+                        <div 
+                            className={`nav-item ${activeTab === 'chemical' ? 'active' : ''}`} 
+                            onClick={() => {
+                                setActiveTab('chemical');
+                                setRadiationLocation(null);
+                            }}
+                        >
+                            <div className="nav-icon">⚗️</div>
+                            <div className="nav-label">Keemia</div>
                         </div>
-                        <div className={`nav-item ${bottomNavActive === 'data' ? 'active' : ''}`} onClick={() => setBottomNavActive('data')}>
-                            <div className="nav-icon">📊</div>
-                            <div className="nav-label">Andmed</div>
-                        </div>
-                        <div className={`nav-item ${bottomNavActive === 'tools' ? 'active' : ''}`} onClick={() => setBottomNavActive('tools')}>
-                            <div className="nav-icon">🛠️</div>
-                            <div className="nav-label">Tööriistad</div>
-                        </div>
-                        <div className={`nav-item ${bottomNavActive === 'report' ? 'active' : ''}`} onClick={() => setBottomNavActive('report')}>
-                            <div className="nav-icon">📋</div>
-                            <div className="nav-label">Aruanne</div>
+                        <div 
+                            className={`nav-item ${activeTab === 'radiation' ? 'active' : ''}`} 
+                            onClick={() => {
+                                setActiveTab('radiation');
+                                setReleaseLocation(null);
+                            }}
+                        >
+                            <div className="nav-icon">☢️</div>
+                            <div className="nav-label">Kiirgus</div>
                         </div>
                     </div>
                 </div>
